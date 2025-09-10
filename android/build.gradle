@@ -1,0 +1,27 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+// 全局配置，移除所有子模块的 -Werror，并抑制过时选项的 lint 提示
+subprojects {
+    tasks.withType(JavaCompile).configureEach { JavaCompile jc ->
+        jc.options.compilerArgs.removeAll(['-Werror'])
+        jc.options.compilerArgs << '-Xlint:-options'
+    }
+}
+
