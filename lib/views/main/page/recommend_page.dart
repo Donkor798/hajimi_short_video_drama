@@ -7,6 +7,7 @@ import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
 import '../../../viewmodels/recommend_view_model.dart';
 import '../../../widgets/drama_card.dart';
+import '../../../widgets/gradient_app_bar.dart';
 
 /// 推荐页面 - 展示推荐短剧列表，支持下拉刷新
 /// author : Donkor , 创建日期: 2025-09-10
@@ -35,12 +36,10 @@ class _RecommendPageState extends State<RecommendPage> {
         builder: (context, vm, child) {
           return Scaffold(
             backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: Text(context.tr('recommend')),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => NavigatorUtils.goBack(context),
-              ),
+            appBar: GradientAppBar(
+              titleText: context.tr('recommend'),
+              showBack: true,
+              onBack: () => NavigatorUtils.goBack(context),
             ),
             body: EasyRefresh(
               header: const ClassicHeader(), // 下拉刷新的头部提示
@@ -78,7 +77,7 @@ class _RecommendPageState extends State<RecommendPage> {
                             return DramaCard(
                               drama: drama,
                               showUpdateTime: false,
-                              onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                              onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
                             );
                           },
                         ),

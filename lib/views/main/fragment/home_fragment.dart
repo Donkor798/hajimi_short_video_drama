@@ -14,17 +14,19 @@ import '../../../widgets/loading_widget.dart';
 import '../../../widgets/error_widget.dart' as custom_widgets;
 import '../../../models/drama.dart';
 
+import '../../../widgets/gradient_app_bar.dart';
+
 /// 首页
 /// Author: Donkor
 /// Created: 2025-09-10
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeFragment extends StatefulWidget {
+  const HomeFragment({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeFragment> createState() => _HomeFragmentState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomeFragmentState extends State<HomeFragment>
     with AutomaticKeepAliveClientMixin {
   late HomeViewModel _viewModel;
 
@@ -77,52 +79,24 @@ class _HomePageState extends State<HomePage>
   /// 构建应用栏（圆角+渐变，带热门/推荐/最新/搜索图标）
   /// author : Donkor , 创建日期: 2025-09-10
   PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, Color(0xFF5A8DEE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
-          ),
-        ),
-      ),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
-      ),
-      title: Text(
-        context.tr('app_name'),
-        style: AppTextStyles.h5.copyWith(color: AppColors.textLight),
-      ),
+    return GradientAppBar(
+      titleText: context.tr('app_name'),
       actions: [
-        // 热门
         IconButton(
           tooltip: context.tr('hot'),
           icon: const Icon(Icons.local_fire_department, color: AppColors.textLight),
           onPressed: _onHotTap,
         ),
-        // 推荐
         IconButton(
           tooltip: context.tr('recommend'),
           icon: const Icon(Icons.thumb_up_alt_outlined, color: AppColors.textLight),
           onPressed: _onRecommendTap,
         ),
-        // 最新
         IconButton(
           tooltip: context.tr('latest'),
           icon: const Icon(Icons.update, color: AppColors.textLight),
           onPressed: _onLatestTap,
         ),
-        // 搜索
         IconButton(
           tooltip: context.tr('search'),
           icon: const Icon(Icons.search, color: AppColors.textLight),
@@ -285,7 +259,7 @@ class _HomePageState extends State<HomePage>
               width: 160,
               child: DramaCard(
                 drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
               ),
             ),
           );
@@ -328,7 +302,7 @@ class _HomePageState extends State<HomePage>
         final drama = items[index];
         return DramaCard(
           drama: drama,
-          onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+          onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
         );
       },
     );
@@ -357,7 +331,7 @@ class _HomePageState extends State<HomePage>
               width: 160,
               child: DramaCard(
                 drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
               ),
             ),
           );
@@ -390,7 +364,7 @@ class _HomePageState extends State<HomePage>
               width: 160,
               child: DramaCard(
                 drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
               ),
             ),
           );

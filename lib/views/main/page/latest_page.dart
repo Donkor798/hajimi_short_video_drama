@@ -7,6 +7,7 @@ import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
 import '../../../viewmodels/latest_view_model.dart';
 import '../../../widgets/drama_card.dart';
+import '../../../widgets/gradient_app_bar.dart';
 
 /// 最新页面 - 展示最新短剧列表，支持下拉刷新与上拉加载
 /// author : Donkor , 创建日期: 2025-09-10
@@ -35,12 +36,10 @@ class _LatestPageState extends State<LatestPage> {
         builder: (context, vm, child) {
           return Scaffold(
             backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: Text(context.tr('latest')),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => NavigatorUtils.goBack(context),
-              ),
+            appBar: GradientAppBar(
+              titleText: context.tr('latest'),
+              showBack: true,
+              onBack: () => NavigatorUtils.goBack(context),
             ),
             body: EasyRefresh(
               header: const ClassicHeader(), // 下拉刷新头部提示
@@ -78,7 +77,7 @@ class _LatestPageState extends State<LatestPage> {
                             return DramaCard(
                               drama: drama,
                               showUpdateTime: false,
-                              onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                              onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
                             );
                           },
                         ),

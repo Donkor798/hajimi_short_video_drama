@@ -5,19 +5,21 @@
   "category": "Category",
   "settings": "Settings",
   "favorites": "Favorites",
+  "mine": "Me",
+
   "history": "History",
-  
+
   "recommend": "Recommend",
   "latest": "Latest",
   "hot": "Hot",
   "all_categories": "All Categories",
-  
+
   "search_hint": "Search drama name",
   "search_result": "Search Results",
   "no_search_result": "No search results",
   "search_history": "Search History",
   "clear_search_history": "Clear Search History",
-  
+
   "play": "Play",
   "pause": "Pause",
   "fullscreen": "Fullscreen",
@@ -26,46 +28,48 @@
   "previous_episode": "Previous Episode",
   "episode": "Episode {number}",
   "total_episodes": "Total {total} Episodes",
-  
+
   "drama_detail": "Drama Detail",
   "drama_info": "Drama Info",
   "episode_list": "Episode List",
+  "episode_select": "Episodes",
+
   "cast": "Cast",
   "director": "Director",
   "genre": "Genre",
   "release_date": "Release Date",
   "rating": "Rating",
   "description": "Description",
-  
+
   "add_to_favorites": "Add to Favorites",
   "remove_from_favorites": "Remove from Favorites",
   "share": "Share",
   "download": "Download",
-  
+
   "loading": "Loading...",
   "load_more": "Load More",
   "no_more_data": "No More Data",
   "refresh": "Refresh",
   "retry": "Retry",
-  
+
   "network_error": "Network Error",
   "server_error": "Server Error",
   "unknown_error": "Unknown Error",
   "no_data": "No Data",
   "load_failed": "Load Failed",
-  
+
   "language": "Language",
   "theme": "Theme",
   "light_theme": "Light Theme",
   "dark_theme": "Dark Theme",
   "system_theme": "System Theme",
-  
+
   "about": "About",
   "version": "Version",
   "feedback": "Feedback",
   "privacy_policy": "Privacy Policy",
   "terms_of_service": "Terms of Service",
-  
+
   "confirm": "Confirm",
   "cancel": "Cancel",
   "ok": "OK",
@@ -75,16 +79,21 @@
   "delete": "Delete",
   "edit": "Edit",
   "close": "Close",
-  
+
   "minute": "minute",
   "hour": "hour",
   "day": "day",
   "week": "week",
   "month": "month",
   "year": "year",
-  
+
   "today": "Today",
   "yesterday": "Yesterday",
   "this_week": "This Week",
-  "this_month": "This Month"
+  "this_month": "This Month",
+  "update_time": "Update Time",
+  "related_recommendations": "Related",
+  "no_episode_info": "No episode info",
+  "share_feature_wip": "Share feature WIP",
+  "episodes_count": "Episodes"
 }

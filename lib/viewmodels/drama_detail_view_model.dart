@@ -12,6 +12,16 @@ class DramaDetailViewModel extends BaseViewModel {
   Drama? _drama;
   Drama? get drama => _drama;
 
+  /// parseAll 的简介（优先用于展示）
+  String? _parseDescription;
+  String? get parseDescription => _parseDescription;
+  String? _parseCover;
+  String? get parseCover => _parseCover;
+  String? _parseVideoName;
+  String? get parseVideoName => _parseVideoName;
+  int? _parseTotalEpisodes;
+  int? get parseTotalEpisodes => _parseTotalEpisodes;
+
   /// 剧集列表
   List<Episode> _episodes = [];
   List<Episode> get episodes => _episodes;
@@ -54,15 +64,20 @@ class DramaDetailViewModel extends BaseViewModel {
     notifyListeners();
 
     try {
-      final response = await _apiService.getAllEpisodes(dramaId: _drama!.id);
-      
+      final response = await _apiService.getAllEpisodesAndMeta(dramaId: _drama!.id);
       if (response.success && response.data != null) {
-        _episodes = response.data!;
-        
+        final meta = response.data!; _parseCover = meta.cover; _parseVideoName = meta.videoName; _parseTotalEpisodes = meta.totalEpisodes;
+        _parseDescription = meta.description;
+        _episodes = meta.episodes
+            .map((e) => e.dramaId == 0 ? e.copyWith(dramaId: _drama!.id) : e)
+            .toList()
+          ..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
+
         // 如果没有剧集数据，创建默认剧集
-        if (_episodes.isEmpty && _drama!.totalEpisodes != null) {
+        final total = _drama!.totalEpisodes ?? meta.totalEpisodes ?? 0;
+        if (_episodes.isEmpty && total > 0) {
           _episodes = List.generate(
-            _drama!.totalEpisodes!,
+            total,
             (index) => Episode(
               dramaId: _drama!.id,
               episodeNumber: index + 1,

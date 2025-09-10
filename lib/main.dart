@@ -13,7 +13,10 @@ import 'package:circular_bottom_navigation/circular_bottom_navigation.dart';
 import 'package:circular_bottom_navigation/tab_item.dart';
 import 'viewmodels/main_page_view_model.dart';
 
-import 'views/main/page/home_page.dart';
+import 'views/main/fragment/home_fragment.dart';
+import 'views/main/fragment/favorites_fragment.dart';
+import 'views/main/fragment/my_fragment.dart';
+
 
 /// 哈吉米短剧应用
 /// Author: Donkor
@@ -124,9 +127,9 @@ class MainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<MainPageViewModel>();
     final pages = const [
-      HomePage(),
-      FavoritesPage(),
-      SettingsPage(),
+      HomeFragment(),
+      FavoritesFragment(),
+      MyFragment(),
     ];
 
     return Scaffold(
@@ -151,7 +154,7 @@ class _CircularBottomNav extends StatelessWidget {
     final tabItems = <TabItem>[
       TabItem(Icons.home, context.tr('home'), AppColors.primary, labelStyle: const TextStyle(fontSize: 12)),
       TabItem(Icons.favorite, context.tr('favorites'), AppColors.primary, labelStyle: const TextStyle(fontSize: 12)),
-      TabItem(Icons.settings, context.tr('settings'), AppColors.primary, labelStyle: const TextStyle(fontSize: 12)),
+      TabItem(Icons.person, context.tr('mine'), AppColors.primary, labelStyle: const TextStyle(fontSize: 12)),
     ];
 
     const double bottomNavBarHeight = 60.0; // 底部栏高度
@@ -174,36 +177,3 @@ class _CircularBottomNav extends StatelessWidget {
   }
 }
 
-/// 临时收藏页面
-class FavoritesPage extends StatelessWidget {
-  const FavoritesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('favorites')),
-      ),
-      body: const Center(
-        child: Text('收藏页面 - 开发中'),
-      ),
-    );
-  }
-}
-
-/// 临时设置页面
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('settings')),
-      ),
-      body: const Center(
-        child: Text('设置页面 - 开发中'),
-      ),
-    );
-  }
-}

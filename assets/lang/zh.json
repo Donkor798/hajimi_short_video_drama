@@ -5,19 +5,21 @@
   "category": "分类",
   "settings": "设置",
   "favorites": "收藏",
+  "mine": "我的",
+
   "history": "历史",
-  
+
   "recommend": "推荐",
   "latest": "最新",
   "hot": "热门",
   "all_categories": "全部分类",
-  
+
   "search_hint": "搜索短剧名称",
   "search_result": "搜索结果",
   "no_search_result": "暂无搜索结果",
   "search_history": "搜索历史",
   "clear_search_history": "清空搜索历史",
-  
+
   "play": "播放",
   "pause": "暂停",
   "fullscreen": "全屏",
@@ -26,46 +28,48 @@
   "previous_episode": "上一集",
   "episode": "第{number}集",
   "total_episodes": "共{total}集",
-  
+
   "drama_detail": "剧集详情",
   "drama_info": "剧集信息",
   "episode_list": "剧集列表",
+  "episode_select": "选集",
+
   "cast": "演员表",
   "director": "导演",
   "genre": "类型",
   "release_date": "上映时间",
   "rating": "评分",
   "description": "剧情简介",
-  
+
   "add_to_favorites": "加入收藏",
   "remove_from_favorites": "取消收藏",
   "share": "分享",
   "download": "下载",
-  
+
   "loading": "加载中...",
   "load_more": "加载更多",
   "no_more_data": "没有更多数据",
   "refresh": "刷新",
   "retry": "重试",
-  
+
   "network_error": "网络连接失败",
   "server_error": "服务器错误",
   "unknown_error": "未知错误",
   "no_data": "暂无数据",
   "load_failed": "加载失败",
-  
+
   "language": "语言",
   "theme": "主题",
   "light_theme": "浅色主题",
   "dark_theme": "深色主题",
   "system_theme": "跟随系统",
-  
+
   "about": "关于",
   "version": "版本",
   "feedback": "意见反馈",
   "privacy_policy": "隐私政策",
   "terms_of_service": "服务条款",
-  
+
   "confirm": "确认",
   "cancel": "取消",
   "ok": "确定",
@@ -75,16 +79,21 @@
   "delete": "删除",
   "edit": "编辑",
   "close": "关闭",
-  
+
   "minute": "分钟",
   "hour": "小时",
   "day": "天",
   "week": "周",
   "month": "月",
   "year": "年",
-  
+
   "today": "今天",
   "yesterday": "昨天",
   "this_week": "本周",
-  "this_month": "本月"
+  "this_month": "本月",
+  "update_time": "更新时间",
+  "related_recommendations": "相关推荐",
+  "no_episode_info": "暂无剧集信息",
+  "share_feature_wip": "分享功能开发中",
+  "episodes_count": "集数"
 }

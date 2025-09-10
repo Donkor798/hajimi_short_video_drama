@@ -13,7 +13,7 @@ import '../../../widgets/error_widget.dart' as custom_widgets;
 
 /// 短剧详情页面
 /// Author: Donkor
-/// Created: 2024-12-19
+/// Created: 2025-09-10
 class DramaDetailPage extends StatefulWidget {
   final Drama drama;
 
@@ -35,8 +35,8 @@ class _DramaDetailPageState extends State<DramaDetailPage>
   void initState() {
     super.initState();
     _viewModel = context.read<DramaDetailViewModel>();
-    _tabController = TabController(length: 2, vsync: this);
-    
+    _tabController = TabController(length: 1, vsync: this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel.init(widget.drama);
     });
@@ -58,7 +58,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
             slivers: [
               // 应用栏
               _buildSliverAppBar(viewModel),
-              
+
               // 内容
               if (viewModel.isLoading && viewModel.drama == null) ...[
                 const SliverFillRemaining(
@@ -74,10 +74,10 @@ class _DramaDetailPageState extends State<DramaDetailPage>
               ] else ...[
                 // 短剧信息
                 _buildDramaInfo(viewModel),
-                
+
                 // 标签页
                 _buildTabBar(),
-                
+
                 // 标签页内容
                 _buildTabContent(viewModel),
               ],
@@ -91,7 +91,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
   /// 构建可折叠应用栏
   Widget _buildSliverAppBar(DramaDetailViewModel viewModel) {
     final drama = viewModel.drama ?? widget.drama;
-    
+
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -119,11 +119,11 @@ class _DramaDetailPageState extends State<DramaDetailPage>
           children: [
             // 背景图片
             SvCacheImage.cover(
-              imageUrl: drama.cover,
+              imageUrl: (context.read<DramaDetailViewModel>().parseCover ?? drama.cover),
               width: double.infinity,
               height: double.infinity,
             ),
-            
+
             // 渐变遮罩
             Container(
               decoration: BoxDecoration(
@@ -137,7 +137,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
                 ),
               ),
             ),
-            
+
             // 播放按钮
             Center(
               child: GestureDetector(
@@ -166,7 +166,9 @@ class _DramaDetailPageState extends State<DramaDetailPage>
   /// 构建短剧信息
   Widget _buildDramaInfo(DramaDetailViewModel viewModel) {
     final drama = viewModel.drama ?? widget.drama;
-    
+
+    final total = viewModel.parseTotalEpisodes ?? drama.totalEpisodes;
+
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -179,7 +181,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
               children: [
                 Expanded(
                   child: Text(
-                    drama.name,
+                    (context.read<DramaDetailViewModel>().parseVideoName ?? drama.name),
                     style: AppTextStyles.h4,
                   ),
                 ),
@@ -215,28 +217,31 @@ class _DramaDetailPageState extends State<DramaDetailPage>
                 ],
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // 基本信息
-            _buildInfoRow('更新时间', drama.updateTime),
-            if (drama.hasGenre) _buildInfoRow('类型', drama.genre!),
-            if (drama.hasDirector) _buildInfoRow('导演', drama.director!),
-            if (drama.hasCast) _buildInfoRow('演员', drama.cast!),
-            if (drama.totalEpisodes != null)
-              _buildInfoRow('集数', '共${drama.totalEpisodes}集'),
-            
+            _buildInfoRow(context.tr('update_time'), drama.updateTime),
+            if ((drama.releaseDate ?? '').isNotEmpty)
+              _buildInfoRow(context.tr('release_date'), drama.releaseDate!),
+            if (drama.hasGenre) _buildInfoRow(context.tr('genre'), drama.genre!),
+            if (drama.hasDirector) _buildInfoRow(context.tr('director'), drama.director!),
+            if (drama.hasCast) _buildInfoRow(context.tr('cast'), drama.cast!),
+
+            if (total != null)
+              _buildInfoRow(context.tr('episodes_count'), context.tr('total_episodes', params: {'total': total.toString()})),
+
             const SizedBox(height: 16),
-            
-            // 描述
-            if (drama.hasDescription) ...[
+
+            // 描述（优先使用 parseAll 的 description）
+            if (((viewModel.parseDescription ?? drama.description) ?? '').isNotEmpty) ...[
               Text(
-                '剧情简介',
+                context.tr('description'),
                 style: AppTextStyles.h6,
               ),
               const SizedBox(height: 8),
               Text(
-                drama.description!,
+                (viewModel.parseDescription ?? drama.description)!,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -287,8 +292,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
           tabs: [
-            Tab(text: context.tr('episode_list')),
-            const Tab(text: '相关推荐'),
+            Tab(text: context.tr('episode_select')),
           ],
         ),
       ),
@@ -302,7 +306,6 @@ class _DramaDetailPageState extends State<DramaDetailPage>
         controller: _tabController,
         children: [
           _buildEpisodeList(viewModel),
-          _buildRecommendations(),
         ],
       ),
     );
@@ -315,13 +318,14 @@ class _DramaDetailPageState extends State<DramaDetailPage>
     }
 
     if (viewModel.episodes.isEmpty) {
-      return const Center(
-        child: Text('暂无剧集信息'),
+      return Center(
+        child: Text(context.tr('no_episode_info')),
       );
     }
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
+
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         childAspectRatio: 2.5,
@@ -333,7 +337,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
         final episode = viewModel.episodes[index];
         final isSelected = episode.episodeNumber == viewModel.selectedEpisode;
         final isWatched = viewModel.isEpisodeWatched(episode.episodeNumber);
-        
+
         return GestureDetector(
           onTap: () => _playEpisode(viewModel, episode.episodeNumber),
           child: Container(
@@ -348,7 +352,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
               children: [
                 Center(
                   child: Text(
-                    '第${episode.episodeNumber}集',
+                    context.tr('episode', params: {'number': episode.episodeNumber.toString()}),
                     style: AppTextStyles.labelMedium.copyWith(
                       color: isSelected ? AppColors.textLight : AppColors.textPrimary,
                     ),
@@ -377,8 +381,8 @@ class _DramaDetailPageState extends State<DramaDetailPage>
 
   /// 构建推荐内容
   Widget _buildRecommendations() {
-    return const Center(
-      child: Text('相关推荐 - 开发中'),
+    return Center(
+      child: Text('${context.tr('related_recommendations')} - ${context.tr('loading')}'),
     );
   }
 
@@ -390,19 +394,26 @@ class _DramaDetailPageState extends State<DramaDetailPage>
   /// 播放剧集
   void _playEpisode(DramaDetailViewModel viewModel, int episodeNumber) {
     final drama = viewModel.drama ?? widget.drama;
-    // 使用 fluro 跳转到播放器页，携带 Drama 对象作为 arguments
+    String? url;
+    for (final e in viewModel.episodes) {
+      if (e.episodeNumber == episodeNumber) { url = e.playUrl; break; }
+    }
+
     NavigatorUtils.push(
       context,
       '${MainRouter.playerPage}/${drama.id}/$episodeNumber',
-      arguments: drama,
+      arguments: {
+        'drama': drama,
+        'videoUrl': url,
+      },
     );
   }
 
   /// 分享短剧
   void _shareDrama(Drama drama) {
-    // 实现分享功能（暂时用SnackBar提示）
+    // TODO(share): implement share
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('分享功能开发中')),
+      SnackBar(content: Text(context.tr('share_feature_wip'))),
     );
   }
 }

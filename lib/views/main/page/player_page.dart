@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
 import '../../../models/drama.dart';
-import '../../../models/episode.dart';
+
 import '../../../utils/localization.dart';
 import '../../../router/fluro_navigator.dart';
+
 import '../main_router.dart';
 
 /// 视频播放器页面
 /// Author: Donkor
-/// Created: 2024-12-19
+/// Created: 2025-09-11
 class PlayerPage extends StatefulWidget {
   final Drama drama;
   final int episodeNumber;
@@ -35,7 +36,7 @@ class _PlayerPageState extends State<PlayerPage> {
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
-  bool _isFullScreen = false;
+
 
   @override
   void initState() {
@@ -59,7 +60,7 @@ class _PlayerPageState extends State<PlayerPage> {
       });
 
       // 使用示例视频URL，实际项目中应该从API获取
-      final videoUrl = widget.videoUrl ?? 
+      final videoUrl = widget.videoUrl ??
           'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4';
 
       _videoPlayerController = VideoPlayerController.networkUrl(
@@ -75,6 +76,7 @@ class _PlayerPageState extends State<PlayerPage> {
         allowFullScreen: true,
         allowMuting: true,
         showControls: true,
+
         materialProgressColors: ChewieProgressColors(
           playedColor: AppColors.primary,
           handleColor: AppColors.primary,
@@ -103,7 +105,7 @@ class _PlayerPageState extends State<PlayerPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '播放失败',
+                    context.tr('load_failed'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white,
                     ),
@@ -145,7 +147,7 @@ class _PlayerPageState extends State<PlayerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _isFullScreen ? null : _buildAppBar(),
+      appBar: _buildAppBar(),
       body: _buildBody(),
     );
   }
@@ -169,19 +171,14 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
           ),
           Text(
-            '第${widget.episodeNumber}集',
+            context.tr('episode', params: {'number': widget.episodeNumber.toString()}),
             style: AppTextStyles.labelSmall.copyWith(
               color: Colors.white70,
             ),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onPressed: () => _showMoreOptions(),
-        ),
-      ],
+
     );
   }
 
@@ -207,14 +204,14 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              '播放失败',
+              context.tr('load_failed'),
               style: AppTextStyles.h6.copyWith(
                 color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? '未知错误',
+              _errorMessage ?? context.tr('unknown_error'),
               style: AppTextStyles.bodyMedium.copyWith(
                 color: Colors.white70,
               ),
@@ -227,7 +224,7 @@ class _PlayerPageState extends State<PlayerPage> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('重试'),
+              child: Text(context.tr('retry')),
             ),
           ],
         ),
@@ -242,214 +239,87 @@ class _PlayerPageState extends State<PlayerPage> {
               ? Chewie(controller: _chewieController!)
               : const SizedBox(),
         ),
-        
+        _buildEpisodeNavBar(),
+
         // 控制栏（非全屏时显示）
-        if (!_isFullScreen) _buildControlBar(),
+
       ],
     );
   }
 
-  /// 构建控制栏
-  Widget _buildControlBar() {
-    return Container(
-      color: Colors.black87,
-      padding: const EdgeInsets.all(16),
-      child: Column(
+
+
+
+
+
+
+
+
+
+
+
+
+  /// 剧集切换按钮栏
+  Widget _buildEpisodeNavBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 播放控制按钮
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // 上一集
-              IconButton(
-                onPressed: _hasPreviousEpisode() ? _playPreviousEpisode : null,
-                icon: const Icon(
-                  Icons.skip_previous,
-                  color: Colors.white,
-                  size: 32,
-                ),
+          if (_hasPreviousEpisode())
+            ElevatedButton.icon(
+              onPressed: _playPreviousEpisode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
               ),
-              
-              // 播放/暂停
-              IconButton(
-                onPressed: _togglePlayPause,
-                icon: Icon(
-                  _videoPlayerController?.value.isPlaying == true
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
-                  color: AppColors.primary,
-                  size: 48,
-                ),
+              icon: const Icon(Icons.skip_previous),
+              label: Text(context.tr('previous_episode')),
+            ),
+          const SizedBox(width: 12),
+          if (_hasNextEpisode())
+            ElevatedButton.icon(
+              onPressed: _playNextEpisode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
               ),
-              
-              // 下一集
-              IconButton(
-                onPressed: _hasNextEpisode() ? _playNextEpisode : null,
-                icon: const Icon(
-                  Icons.skip_next,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // 剧集信息
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '第${widget.episodeNumber}集',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      widget.drama.name,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // 全屏按钮
-              IconButton(
-                onPressed: _toggleFullScreen,
-                icon: const Icon(
-                  Icons.fullscreen,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+              icon: const Icon(Icons.skip_next),
+              label: Text(context.tr('next_episode')),
+            ),
         ],
       ),
     );
   }
 
-  /// 切换播放/暂停
-  void _togglePlayPause() {
-    if (_videoPlayerController?.value.isPlaying == true) {
-      _videoPlayerController?.pause();
-    } else {
-      _videoPlayerController?.play();
-    }
-  }
+  bool _hasPreviousEpisode() => widget.episodeNumber > 1;
 
-  /// 切换全屏
-  void _toggleFullScreen() {
-    setState(() {
-      _isFullScreen = !_isFullScreen;
-    });
-    
-    if (_isFullScreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-      ]);
-    }
-  }
-
-  /// 是否有上一集
-  bool _hasPreviousEpisode() {
-    return widget.episodeNumber > 1;
-  }
-
-  /// 是否有下一集
   bool _hasNextEpisode() {
-    // 这里应该根据实际的剧集数量判断
-    return widget.episodeNumber < (widget.drama.totalEpisodes ?? 100);
+    final total = widget.drama.totalEpisodes;
+    if (total == null) return true;
+    return widget.episodeNumber < total;
   }
 
-  /// 播放上一集
   void _playPreviousEpisode() {
-    if (_hasPreviousEpisode()) {
-      NavigatorUtils.goBack(context);
-      NavigatorUtils.push(
-        context,
-        '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber - 1}',
-        arguments: widget.drama,
-      );
-    }
+    if (!_hasPreviousEpisode()) return;
+    NavigatorUtils.push(
+      context,
+      '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber - 1}',
+      replace: true,
+      arguments: {'drama': widget.drama},
+    );
   }
 
-  /// 播放下一集
   void _playNextEpisode() {
-    if (_hasNextEpisode()) {
-      NavigatorUtils.goBack(context);
-      NavigatorUtils.push(
-        context,
-        '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber + 1}',
-        arguments: widget.drama,
-      );
-    }
-  }
-
-  /// 显示更多选项
-  void _showMoreOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.speed),
-              title: const Text('播放速度'),
-              onTap: () {
-                NavigatorUtils.goBack(context);
-                _showSpeedOptions();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.high_quality),
-              title: const Text('画质选择'),
-              onTap: () {
-                NavigatorUtils.goBack(context);
-                _showQualityOptions();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.download),
-              title: const Text('下载'),
-              onTap: () {
-                NavigatorUtils.goBack(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('下载功能开发中')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+    if (!_hasNextEpisode()) return;
+    NavigatorUtils.push(
+      context,
+      '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber + 1}',
+      replace: true,
+      arguments: {'drama': widget.drama},
     );
   }
 
-  /// 显示播放速度选项
-  void _showSpeedOptions() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('播放速度调节功能开发中')),
-    );
-  }
 
-  /// 显示画质选项
-  void _showQualityOptions() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('画质选择功能开发中')),
-    );
-  }
+
 }

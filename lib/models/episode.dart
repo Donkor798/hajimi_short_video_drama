@@ -22,18 +22,46 @@ class Episode {
     this.watchProgress,
   });
 
-  /// 从JSON创建Episode对象
+  /// 从JSON创建Episode对象（兼容多种字段命名）
   factory Episode.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is double) return v.toInt();
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    String? _toStrN(dynamic v) => v?.toString();
+
+    // 解析可能的标题与标签
+    final String? label = _toStrN(json['label']);
+
+    // 解析集号：优先显式字段；若有 index 字段则按 0 基 +1；否则再解析 label 中的数字
+    int episodeNumber = _toInt(json['episode_number'] ?? json['episode'] ?? json['no']);
+
+    final hasIndex = json.containsKey('index');
+    if (hasIndex) {
+      final idx = _toInt(json['index']);
+      episodeNumber = idx + 1; // index 为 0 基
+    } else if (episodeNumber == 0 && label != null) {
+      final match = RegExp(r'\d+').firstMatch(label);
+      if (match != null) {
+        episodeNumber = int.tryParse(match.group(0)!) ?? 0;
+      }
+    }
+
     return Episode(
-      dramaId: json['drama_id'] as int? ?? 0,
-      episodeNumber: json['episode_number'] as int? ?? 0,
-      title: json['title'] as String? ?? '',
-      playUrl: json['play_url'] as String?,
-      thumbnail: json['thumbnail'] as String?,
-      duration: json['duration'] as int?,
-      description: json['description'] as String?,
-      isWatched: json['is_watched'] as bool? ?? false,
-      watchProgress: json['watch_progress'] as int?,
+      dramaId: _toInt(json['drama_id'] ?? json['dramaId'] ?? json['vod_id'] ?? json['id']),
+      episodeNumber: episodeNumber,
+      title: (json['title'] as String?) ?? _toStrN(json['name']) ?? label ?? '',
+      playUrl: (_toStrN(json['play_url']) ?? _toStrN(json['playUrl']) ?? _toStrN(json['parsedUrl']) ?? _toStrN(json['url']) ?? _toStrN(json['link'])),
+      thumbnail: _toStrN(json['thumbnail'] ?? json['thumb'] ?? json['cover'] ?? json['pic']),
+      duration: json['duration'] is int ? json['duration'] as int : _toInt(json['duration']),
+      description: (json['description'] as String?) ?? _toStrN(json['desc']),
+      isWatched: (json['is_watched'] as bool?) ?? false,
+      watchProgress: json['watch_progress'] is int ? json['watch_progress'] as int : null,
     );
   }
 

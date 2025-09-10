@@ -7,6 +7,7 @@ import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
 import '../../../viewmodels/hot_view_model.dart';
 import '../../../widgets/drama_card.dart';
+import '../../../widgets/gradient_app_bar.dart';
 
 /// 热门页面 - 默认取第一个分类作为“热门”，分页加载
 /// author : Donkor , 创建日期: 2025-09-10
@@ -35,12 +36,10 @@ class _HotPageState extends State<HotPage> {
         builder: (context, vm, child) {
           return Scaffold(
             backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: Text(context.tr('hot')),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => NavigatorUtils.goBack(context),
-              ),
+            appBar: GradientAppBar(
+              titleText: context.tr('hot'),
+              showBack: true,
+              onBack: () => NavigatorUtils.goBack(context),
             ),
             body: EasyRefresh(
               onRefresh: () async => vm.refresh(),
@@ -62,7 +61,7 @@ class _HotPageState extends State<HotPage> {
                           final drama = vm.items[index];
                           return DramaCard(
                             drama: drama,
-                            onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
+                            onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
                           );
                         },
                       ),
