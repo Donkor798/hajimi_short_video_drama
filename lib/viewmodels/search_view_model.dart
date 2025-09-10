@@ -1,6 +1,6 @@
 import '../models/drama.dart';
 import '../services/drama_api_service.dart';
-import '../utils/storage_utils.dart';
+import '../database/database_helper.dart';
 import 'base_view_model.dart';
 
 /// 搜索页面ViewModel
@@ -71,11 +71,12 @@ class SearchViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  /// 加载搜索历史
+  /// 加载搜索历史（直接使用数据库）
   Future<void> loadSearchHistory() async {
     try {
-      final history = await StorageUtils.getSearchHistory();
-      _searchHistory = history ?? [];
+      final db = DatabaseHelper();
+      final history = await db.getSearchHistory(limit: 20);
+      _searchHistory = history;
       notifyListeners();
     } catch (e) {
       // 忽略加载历史的错误
@@ -98,8 +99,9 @@ class SearchViewModel extends BaseViewModel {
         _searchHistory = _searchHistory.take(20).toList();
       }
       
-      // 保存到本地存储
-      await StorageUtils.setSearchHistory(_searchHistory);
+      // 持久化到数据库（更新或插入该关键词）
+      final db = DatabaseHelper();
+      await db.saveSearchHistory(keyword);
       notifyListeners();
     } catch (e) {
       // 忽略保存历史的错误
@@ -110,7 +112,8 @@ class SearchViewModel extends BaseViewModel {
   Future<void> removeFromSearchHistory(String keyword) async {
     try {
       _searchHistory.remove(keyword);
-      await StorageUtils.setSearchHistory(_searchHistory);
+      final db = DatabaseHelper();
+      await db.deleteSearchHistoryItem(keyword);
       notifyListeners();
     } catch (e) {
       // 忽略删除历史的错误
@@ -121,7 +124,8 @@ class SearchViewModel extends BaseViewModel {
   Future<void> clearSearchHistory() async {
     try {
       _searchHistory.clear();
-      await StorageUtils.setSearchHistory(_searchHistory);
+      final db = DatabaseHelper();
+      await db.clearSearchHistory();
       notifyListeners();
     } catch (e) {
       // 忽略清空历史的错误

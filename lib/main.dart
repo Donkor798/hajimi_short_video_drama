@@ -6,7 +6,6 @@ import 'constants/app_constants.dart';
 import 'services/http_service.dart';
 import 'utils/localization.dart';
 import 'router/routers.dart';
-import 'utils/storage_utils.dart';
 import 'viewmodels/home_view_model.dart';
 import 'viewmodels/search_view_model.dart';
 import 'viewmodels/drama_detail_view_model.dart';
@@ -33,9 +32,6 @@ void main() async {
 
 /// 初始化服务
 Future<void> _initializeServices() async {
-  // 初始化存储
-  await StorageUtils.init();
-
   // 初始化HTTP服务
   HttpService().init();
 }

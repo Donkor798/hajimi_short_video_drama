@@ -1,7 +1,7 @@
 import '../models/drama.dart';
 import '../models/episode.dart';
 import '../services/drama_api_service.dart';
-import '../utils/storage_utils.dart';
+import '../database/database_helper.dart';
 import 'base_view_model.dart';
 
 /// 短剧详情页面ViewModel
@@ -81,62 +81,60 @@ class DramaDetailViewModel extends BaseViewModel {
     }
   }
 
-  /// 加载收藏状态
+  /// 加载收藏状态（使用本地 user_id: "local"，类型: "drama"）
   Future<void> loadFavoriteStatus() async {
     if (_drama == null) return;
 
     try {
-      final favorites = await StorageUtils.getFavorites();
-      if (favorites != null) {
-        _isFavorite = favorites.any((fav) => fav['id'] == _drama!.id);
-        notifyListeners();
-      }
+      final db = DatabaseHelper();
+      _isFavorite = await db.isFavorited('local', _drama!.id.toString(), 'drama');
+      notifyListeners();
     } catch (e) {
       // 忽略加载收藏状态的错误
     }
   }
 
-  /// 加载播放进度
+  /// 加载播放进度（来自 play_history 表）
   Future<void> loadPlayProgress() async {
     if (_drama == null) return;
 
     try {
-      final history = await StorageUtils.getPlayHistory();
-      if (history != null) {
-        for (final item in history) {
-          if (item['drama_id'] == _drama!.id) {
-            final episodeNumber = item['episode_number'] as int?;
-            final progress = item['progress'] as int?;
-            if (episodeNumber != null && progress != null) {
-              _playProgress[episodeNumber] = progress;
-            }
+      final db = DatabaseHelper();
+      final list = await db.getPlayHistory(limit: 200);
+      _playProgress.clear();
+      for (final item in list) {
+        if ((item['drama_id'] as int?) == _drama!.id) {
+          final ep = item['episode_number'] as int?;
+          final prog = item['progress'] as int?;
+          if (ep != null && prog != null) {
+            _playProgress[ep] = prog;
           }
         }
-        notifyListeners();
       }
+      notifyListeners();
     } catch (e) {
       // 忽略加载播放进度的错误
     }
   }
 
-  /// 切换收藏状态
+  /// 切换收藏状态（user_id: local, target_type: drama）
   Future<void> toggleFavorite() async {
     if (_drama == null) return;
 
     try {
-      final favorites = await StorageUtils.getFavorites() ?? [];
-      
+      final db = DatabaseHelper();
+      const userId = 'local';
+      const targetType = 'drama';
+      final targetId = _drama!.id.toString();
+
       if (_isFavorite) {
-        // 取消收藏
-        favorites.removeWhere((fav) => fav['id'] == _drama!.id);
+        await db.deleteUserFavorite(userId, targetId, targetType);
         _isFavorite = false;
       } else {
-        // 添加收藏
-        favorites.insert(0, _drama!.toJson());
+        await db.saveUserFavorite(userId, targetId, targetType);
         _isFavorite = true;
       }
-      
-      await StorageUtils.setFavorites(favorites);
+
       notifyListeners();
     } catch (e) {
       setError('操作失败: $e');
@@ -180,35 +178,20 @@ class DramaDetailViewModel extends BaseViewModel {
     }
   }
 
-  /// 更新播放历史
+  /// 更新播放历史（写入 play_history 表）
   Future<void> updatePlayHistory(int episodeNumber, [int progress = 0]) async {
     if (_drama == null) return;
 
     try {
-      final history = await StorageUtils.getPlayHistory() ?? [];
-      
-      // 移除已存在的记录
-      history.removeWhere((item) => 
-          item['drama_id'] == _drama!.id && 
-          item['episode_number'] == episodeNumber);
-      
-      // 添加新记录
-      history.insert(0, {
-        'drama_id': _drama!.id,
-        'drama_name': _drama!.name,
-        'drama_cover': _drama!.cover,
-        'episode_number': episodeNumber,
-        'progress': progress,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-      
-      // 限制历史记录数量
-      if (history.length > 100) {
-        history.removeRange(100, history.length);
-      }
-      
-      await StorageUtils.setPlayHistory(history);
-      
+      final db = DatabaseHelper();
+      await db.upsertPlayHistory(
+        dramaId: _drama!.id,
+        dramaName: _drama!.name,
+        dramaCover: _drama!.cover,
+        episodeNumber: episodeNumber,
+        progress: progress,
+      );
+
       // 更新本地进度
       _playProgress[episodeNumber] = progress;
       notifyListeners();

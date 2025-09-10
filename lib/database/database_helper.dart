@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 
+
 /// 数据库管理类
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -25,13 +26,12 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 1, // 初始版本：全量创建，无需升级
       onConfigure: (db) async {
         // 开启外键支持
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
     );
   }
 
@@ -70,22 +70,29 @@ class DatabaseHelper {
       )
     ''');
 
+    // 创建播放历史表
+    await db.execute('''
+      CREATE TABLE play_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        drama_id INTEGER NOT NULL,
+        drama_name TEXT NOT NULL,
+        drama_cover TEXT,
+        episode_number INTEGER NOT NULL,
+        progress INTEGER DEFAULT 0,
+        timestamp INTEGER NOT NULL
+      )
+    ''');
+
+
     // 插入默认设置
     await _insertDefaultSettings(db);
   }
 
-  /// 数据库升级
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // 这里处理数据库版本升级逻辑
-    if (oldVersion < 2) {
-      // 添加新字段或表的逻辑
-    }
-  }
 
   /// 插入默认设置
   Future<void> _insertDefaultSettings(Database db) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    
+
     final defaultSettings = [
       {'key': 'language', 'value': 'zh'},
       {'key': 'theme_color_index', 'value': '0'},
@@ -142,12 +149,12 @@ class DatabaseHelper {
   Future<Map<String, String>> getAllSettings() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('settings');
-    
+
     final Map<String, String> settings = {};
     for (final map in maps) {
       settings[map['key'] as String] = map['value'] as String;
     }
-    
+
     return settings;
   }
 
@@ -222,6 +229,62 @@ class DatabaseHelper {
     final db = await database;
     await db.delete('search_history');
   }
+
+  /// 播放历史：查询（按时间倒序）
+  Future<List<Map<String, dynamic>>> getPlayHistory({int limit = 100}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'play_history',
+      orderBy: 'timestamp DESC',
+      limit: limit,
+    );
+    return maps;
+  }
+
+  /// 播放历史：插入或更新（同一剧集唯一）
+  Future<void> upsertPlayHistory({
+    required int dramaId,
+    required String dramaName,
+    String? dramaCover,
+    required int episodeNumber,
+    int progress = 0,
+    int? timestamp,
+  }) async {
+    final db = await database;
+    final ts = timestamp ?? DateTime.now().millisecondsSinceEpoch;
+    // 先删除冲突记录
+    await db.delete(
+      'play_history',
+      where: 'drama_id = ? AND episode_number = ?',
+      whereArgs: [dramaId, episodeNumber],
+    );
+    // 再插入最新记录
+    await db.insert('play_history', {
+      'drama_id': dramaId,
+      'drama_name': dramaName,
+      'drama_cover': dramaCover,
+      'episode_number': episodeNumber,
+      'progress': progress,
+      'timestamp': ts,
+    });
+  }
+
+  /// 播放历史：清空
+  Future<void> clearPlayHistory() async {
+    final db = await database;
+    await db.delete('play_history');
+  }
+
+  /// 播放历史：删除某剧目
+  Future<void> deletePlayHistoryByDrama(int dramaId) async {
+    final db = await database;
+    await db.delete(
+      'play_history',
+      where: 'drama_id = ?',
+      whereArgs: [dramaId],
+    );
+  }
+
 
   /// 保存用户收藏
   Future<void> saveUserFavorite(String userId, String targetId, String targetType) async {

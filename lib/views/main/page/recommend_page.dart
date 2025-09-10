@@ -43,8 +43,10 @@ class _RecommendPageState extends State<RecommendPage> {
               ),
             ),
             body: EasyRefresh(
+              header: const ClassicHeader(), // 下拉刷新的头部提示
+              footer: const ClassicFooter(), // 上拉加载的底部提示
               onRefresh: () async => vm.refresh(),
-              onLoad: vm.hasMore ? () async { await vm.loadMore(); } : null,
+              onLoad: () async { await vm.loadMore(); }, // 始终允许触发，VM 内部基于 hasMore 决定是否继续
               child: vm.isLoading && vm.items.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : (vm.items.isEmpty && vm.hasError)
@@ -63,7 +65,7 @@ class _RecommendPageState extends State<RecommendPage> {
                         )
                       : GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                          physics: const BouncingScrollPhysics(), // 物理滚动：保留回弹效果，避免 AlwaysScrollable 影响上拉触发
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             mainAxisSpacing: 12,
@@ -75,6 +77,7 @@ class _RecommendPageState extends State<RecommendPage> {
                             final drama = vm.items[index];
                             return DramaCard(
                               drama: drama,
+                              showUpdateTime: false,
                               onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}'),
                             );
                           },

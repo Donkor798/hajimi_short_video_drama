@@ -58,8 +58,8 @@ class RecommendViewModel extends BaseViewModel {
             ..addAll(list);
         }
         _page = page;
-        // 根据返回数量判断是否还有更多
-        _hasMore = list.length >= _pageSize;
+        // 是否还有更多：如果本次返回不为空，则继续允许加载下一页；为空则停
+        _hasMore = list.isNotEmpty;
         return true;
       } else {
         setError(resp.message ?? '加载推荐失败');

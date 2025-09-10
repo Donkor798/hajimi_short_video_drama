@@ -11,6 +11,8 @@ class DramaCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool showScore;
   final bool showUpdateTime;
+  // 保持封面尺寸一致的宽高比（宽/高），默认 3:4
+  final double imageAspectRatio;
 
   const DramaCard({
     super.key,
@@ -18,6 +20,7 @@ class DramaCard extends StatelessWidget {
     this.onTap,
     this.showScore = true,
     this.showUpdateTime = false,
+    this.imageAspectRatio = 3 / 4,
   });
 
   @override
@@ -39,25 +42,23 @@ class DramaCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 封面图片区域使用 Expanded，避免网格内部高度不足时溢出
+            // 封面图片占据可用空间，结合 Grid 的 childAspectRatio 统一卡片比例
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
                   color: AppColors.inputBackground,
                   child: SvCacheImage(
                     imageUrl: drama.cover,
                     width: double.infinity,
                     height: double.infinity,
-                    fit: BoxFit.cover, // 充满卡片区域；若需“完整展示”，可改为 BoxFit.contain
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
 
-            // 信息区域（仅名称 + 日期）
+            // 信息区域（仅名称；推荐/最新默认不显示时间）
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -67,16 +68,19 @@ class DramaCard extends StatelessWidget {
                   Text(
                     drama.name,
                     style: AppTextStyles.labelLarge,
-                    maxLines: 2,
+                    maxLines: 1, // 名称过长省略处理
                     overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    (drama.releaseDate != null && drama.releaseDate!.isNotEmpty)
-                        ? drama.releaseDate!
-                        : drama.updateTime,
-                    style: AppTextStyles.labelSmall,
-                  ),
+                  if (showUpdateTime) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      (drama.releaseDate != null && drama.releaseDate!.isNotEmpty)
+                          ? drama.releaseDate!
+                          : drama.updateTime,
+                      style: AppTextStyles.labelSmall,
+                    ),
+                  ],
                 ],
               ),
             ),

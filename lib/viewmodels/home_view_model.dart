@@ -264,6 +264,9 @@ class HomeViewModel extends BaseViewModel {
            _hotDramas.isNotEmpty;
   }
 
+  /// 是否还有更多分类数据可加载
+  bool get hasMoreCategory => _selectedCategoryId != null && _categoryPage < _categoryTotalPages;
+
   /// 是否正在加载任何数据
   bool get isLoadingAny {
     return isLoading || _isLoadingRecommend || _isLoadingLatest || _isLoadingHot;

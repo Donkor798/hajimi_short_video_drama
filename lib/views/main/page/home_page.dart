@@ -60,9 +60,13 @@ class _HomePageState extends State<HomePage>
             );
           }
 
-          // 仅展示分类相关内容，支持下拉刷新，不支持上拉加载更多
+          // 首页分类：支持下拉刷新 + 上拉加载更多（分类结果分页）
           return EasyRefresh(
+            footer: const ClassicFooter(), //
             onRefresh: () async { await viewModel.refresh(); },
+            onLoad: viewModel.hasMoreCategory
+                ? () async { await viewModel.loadMoreCategory(); }
+                : null,
             child: _buildOnlyCategoryContent(viewModel),
           );
         },

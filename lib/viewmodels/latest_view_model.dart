@@ -59,7 +59,8 @@ class LatestViewModel extends BaseViewModel {
             ..addAll(list);
         }
         _page = page;
-        _hasMore = list.length >= pageSize;
+        // 是否还有更多：如果此次返回非空，则继续允许加载下一页；为空则停止
+        _hasMore = list.isNotEmpty;
         return true;
       } else {
         setError(resp.message ?? '加载最新失败');
