@@ -43,6 +43,9 @@
 
   "add_to_favorites": "加入收藏",
   "remove_from_favorites": "取消收藏",
+  "confirm_remove_favorite": "确认取消收藏？",
+  "removed": "已移除",
+
   "share": "分享",
   "download": "下载",
 
@@ -60,9 +63,7 @@
 
   "language": "语言",
   "theme": "主题",
-  "light_theme": "浅色主题",
-  "dark_theme": "深色主题",
-  "system_theme": "跟随系统",
+
 
   "about": "关于",
   "version": "版本",
@@ -83,14 +84,76 @@
   "minute": "分钟",
   "hour": "小时",
   "day": "天",
+  "browse": "去浏览",
+  "favorites_empty_message": "还没有收藏任何短剧\n快去发现喜欢的内容吧",
+  "history_empty_message": "暂无观看历史\n开始观看短剧吧",
+
   "week": "周",
   "month": "月",
   "year": "年",
+
+  "local_user": "本地用户",
+  "play_history": "观看历史",
+  "common_entries": "常用入口",
+  "actions": "操作",
+  "cleared": "已清理",
 
   "today": "今天",
   "yesterday": "昨天",
   "this_week": "本周",
   "this_month": "本月",
+  "other_functions": "其他功能",
+  "change_avatar": "更换头像",
+  "random_nickname": "随机昵称",
+  "copy_id": "复制ID",
+  "copied": "已复制",
+  "avatar_updated": "头像已更新",
+  "nickname_updated": "昵称已更新",
+
+  "feature_wip": "功能开发中",
+  "edit_profile": "编辑资料",
+  "logout": "退出登录",
+  "logout_confirm_title": "退出登录",
+  "logout_confirm_message": "确定要退出登录吗？",
+  "logout_success": "已退出登录",
+  "total_views": "总观看",
+  "quick_actions": "快捷操作",
+  "refresh_avatar": "换头像",
+  "my_favorites": "我的收藏",
+  "manage_favorites": "管理收藏内容",
+  "download_manager": "下载管理",
+  "offline_videos": "离线视频管理",
+  "app_preferences": "应用偏好设置",
+  "help_improve": "帮助我们改进",
+  "app_info": "应用信息版本",
+  "logout_account": "退出当前账户",
+  "view_watch_history": "查看观看记录",
+
+  "display_settings": "显示设置",
+  "storage_settings": "存储设置",
+  "other_settings": "其他设置",
+  "select_language": "选择语言",
+  "select_theme_color": "选择主题颜色",
+  "choose_theme_color": "选择主题颜色",
+  "theme_color": "主题颜色",
+  "language": "语言",
+
+  "current_cache_size": "当前缓存大小",
+  "cache_info": "缓存信息",
+  "cache_description": "缓存包括图片、视频预览等临时文件",
+  "clear_app_cache": "清理应用缓存",
+  "clear_cache_confirm": "确定要清空所有缓存吗？这将删除所有临时文件。",
+  "cache_cleared": "缓存已清理",
+  "restore_default_settings": "恢复默认设置",
+  "reset_settings_confirm": "确定要重置所有设置吗？这将恢复到默认配置。",
+  "settings_reset": "设置已重置",
+  "cache_size": "缓存大小",
+  "clear_cache": "清理缓存",
+
+
+  "reset_settings": "重置设置",
+
+
   "update_time": "更新时间",
   "related_recommendations": "相关推荐",
   "no_episode_info": "暂无剧集信息",

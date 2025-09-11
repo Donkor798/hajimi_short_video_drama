@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hajimi_short_video_drama/constants/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-import '../../../constants/app_colors.dart';
-import '../../../constants/app_text_styles.dart';
+
 import '../../../utils/localization.dart';
 import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
@@ -12,8 +12,6 @@ import '../../../widgets/category_chip.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/loading_widget.dart';
 import '../../../widgets/error_widget.dart' as custom_widgets;
-import '../../../models/drama.dart';
-
 import '../../../widgets/gradient_app_bar.dart';
 
 /// 首页
@@ -47,6 +45,8 @@ class _HomeFragmentState extends State<HomeFragment>
     super.build(context);
 
     return Scaffold(
+      // 使用主题背景，避免硬编码白色，跟随深色模式/主题色
+      // backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
       body: Consumer<HomeViewModel>(
@@ -84,22 +84,22 @@ class _HomeFragmentState extends State<HomeFragment>
       actions: [
         IconButton(
           tooltip: context.tr('hot'),
-          icon: const Icon(Icons.local_fire_department, color: AppColors.textLight),
+          icon: const Icon(Icons.local_fire_department),
           onPressed: _onHotTap,
         ),
         IconButton(
           tooltip: context.tr('recommend'),
-          icon: const Icon(Icons.thumb_up_alt_outlined, color: AppColors.textLight),
+          icon: const Icon(Icons.thumb_up_alt_outlined),
           onPressed: _onRecommendTap,
         ),
         IconButton(
           tooltip: context.tr('latest'),
-          icon: const Icon(Icons.update, color: AppColors.textLight),
+          icon: const Icon(Icons.update),
           onPressed: _onLatestTap,
         ),
         IconButton(
           tooltip: context.tr('search'),
-          icon: const Icon(Icons.search, color: AppColors.textLight),
+          icon: const Icon(Icons.search),
           onPressed: () => NavigatorUtils.push(context, MainRouter.searchPage),
         ),
       ],
@@ -119,75 +119,6 @@ class _HomeFragmentState extends State<HomeFragment>
   }
 
 
-  /// 构建内容
-  Widget _buildContent(HomeViewModel viewModel) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 热门短剧（置顶展示）
-          if (viewModel.hotDramas.isNotEmpty || viewModel.isLoadingHot) ...[
-            SectionHeader(
-              title: context.tr('hot'),
-              onMoreTap: () {
-                // 跳转到热门页面
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildHotSection(viewModel),
-            const SizedBox(height: 24),
-          ],
-
-          // 全部分类（热门列表下面）
-          if (viewModel.categories.isNotEmpty) ...[
-            SectionHeader(
-              title: context.tr('all_categories'),
-              onMoreTap: () {
-                // 跳转到分类页面
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildCategorySection(viewModel),
-            // 分类结果区域（点击某一分类后显示）
-            if (viewModel.selectedCategoryId != null) ...[
-              const SizedBox(height: 12),
-              _buildCategoryResultsSection(viewModel),
-              const SizedBox(height: 24),
-            ],
-            const SizedBox(height: 24),
-          ],
-
-          // 推荐短剧
-          if (viewModel.recommendDramas.isNotEmpty || viewModel.isLoadingRecommend) ...[
-            SectionHeader(
-              title: context.tr('recommend'),
-              onMoreTap: () {
-                // 跳转到推荐页面
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildRecommendSection(viewModel),
-            const SizedBox(height: 24),
-          ],
-
-          // 最新短剧
-          if (viewModel.latestDramas.isNotEmpty || viewModel.isLoadingLatest) ...[
-            SectionHeader(
-              title: context.tr('latest'),
-              onMoreTap: () {
-                // 跳转到最新页面
-              },
-            ),
-            const SizedBox(height: 12),
-
-            _buildLatestSection(viewModel),
-            const SizedBox(height: 24),
-          ],
-        ],
-      ),
-    );
-  }
   /// 仅展示分类的内容区域
   /// author : Donkor , 创建日期: 2025-09-10
   Widget _buildOnlyCategoryContent(HomeViewModel viewModel) {
@@ -197,10 +128,10 @@ class _HomeFragmentState extends State<HomeFragment>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (viewModel.categories.isNotEmpty) ...[
-            SectionHeader(
-              title: context.tr('all_categories'),
-              onMoreTap: () {},
-            ),
+            // SectionHeader(
+            //   title: context.tr('all_categories'),
+            //   onMoreTap: () {},
+            // ),
             const SizedBox(height: 12),
             _buildCategorySection(viewModel),
             const SizedBox(height: 12),
@@ -212,61 +143,35 @@ class _HomeFragmentState extends State<HomeFragment>
   }
 
 
-  /// 构建分类区域（移除左滑刷新功能）
+  /// 构建分类区域（禁止横向列表向上层冒泡，避免 EasyRefresh 误触发导致指示器溢出）
   Widget _buildCategorySection(HomeViewModel viewModel) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(), // 移除弹性滚动效果，避免左滑刷新
-        itemCount: viewModel.categories.length,
-        itemBuilder: (context, index) {
-          final category = viewModel.categories[index];
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: CategoryChip(
-              label: category.typeName,
-              isSelected: viewModel.selectedCategoryId == category.typeId,
-              onTap: () => viewModel.selectCategory(category.typeId),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// 构建推荐区域
-  Widget _buildRecommendSection(HomeViewModel viewModel) {
-    if (viewModel.isLoadingRecommend) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return SizedBox(
-      height: 280,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: viewModel.recommendDramas.length,
-        itemBuilder: (context, index) {
-          final drama = viewModel.recommendDramas[index];
-          return Padding(
-            padding: EdgeInsets.only(
-              right: index < viewModel.recommendDramas.length - 1 ? 12 : 0,
-            ),
-            child: SizedBox(
-              width: 160,
-              child: DramaCard(
-                drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        // 拦截横向列表的滚动通知，防止 EasyRefresh 接管并在受限宽度中绘制指示器
+        return notification.metrics.axis == Axis.horizontal;
+      },
+      child: SizedBox(
+        height: 40,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(), // 移除弹性滚动效果，避免左滑刷新
+          itemCount: viewModel.categories.length,
+          itemBuilder: (context, index) {
+            final category = viewModel.categories[index];
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CategoryChip(
+                label: category.typeName,
+                isSelected: viewModel.selectedCategoryId == category.typeId,
+                onTap: () => viewModel.selectCategory(category.typeId),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
+
 
   /// 构建最新区域
   /// 构建分类结果区域（网格，不横向滑动，移除加载更多功能）
@@ -305,71 +210,6 @@ class _HomeFragmentState extends State<HomeFragment>
           onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
         );
       },
-    );
-  }
-
-  Widget _buildLatestSection(HomeViewModel viewModel) {
-    if (viewModel.isLoadingLatest) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return SizedBox(
-      height: 280,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: viewModel.latestDramas.length,
-        itemBuilder: (context, index) {
-          final drama = viewModel.latestDramas[index];
-          return Padding(
-            padding: EdgeInsets.only(
-              right: index < viewModel.latestDramas.length - 1 ? 12 : 0,
-            ),
-            child: SizedBox(
-              width: 160,
-              child: DramaCard(
-                drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// 构建热门区域
-  Widget _buildHotSection(HomeViewModel viewModel) {
-    if (viewModel.isLoadingHot) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return SizedBox(
-      height: 280,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: viewModel.hotDramas.length,
-        itemBuilder: (context, index) {
-          final drama = viewModel.hotDramas[index];
-          return Padding(
-            padding: EdgeInsets.only(
-              right: index < viewModel.hotDramas.length - 1 ? 12 : 0,
-            ),
-            child: SizedBox(
-              width: 160,
-              child: DramaCard(
-                drama: drama,
-                onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

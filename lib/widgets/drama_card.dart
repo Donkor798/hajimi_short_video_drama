@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+
 import '../constants/app_text_styles.dart';
 import '../models/drama.dart';
 import 'sv_cache_image.dart';
 
-/// 短剧卡片组件（仅展示：封面、短剧名称、日期；不包含横向滑动）
+/// 短剧卡片组件（支持：封面、名称、时间；可选收藏角标）
 /// author : Donkor , 创建日期: 2025-09-10
 class DramaCard extends StatelessWidget {
   final Drama drama;
@@ -14,6 +14,15 @@ class DramaCard extends StatelessWidget {
   // 保持封面尺寸一致的宽高比（宽/高），默认 3:4
   final double imageAspectRatio;
 
+  /// 是否显示收藏角标（右上角小心形）
+  final bool showFavoriteBadge;
+
+  /// 当前是否为已收藏状态（控制图标样式）
+  final bool isFavorite;
+
+  /// 点击角标的回调（如：取消收藏）
+  final VoidCallback? onFavoriteTap;
+
   const DramaCard({
     super.key,
     required this.drama,
@@ -21,6 +30,9 @@ class DramaCard extends StatelessWidget {
     this.showScore = true,
     this.showUpdateTime = false,
     this.imageAspectRatio = 3 / 4,
+    this.showFavoriteBadge = false,
+    this.isFavorite = false,
+    this.onFavoriteTap,
   });
 
   @override
@@ -29,11 +41,11 @@ class DramaCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadow,
+              color: Theme.of(context).shadowColor,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -42,18 +54,43 @@ class DramaCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 封面图片占据可用空间，结合 Grid 的 childAspectRatio 统一卡片比例
+            // 封面图片 + 可选收藏角标
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Container(
-                  color: AppColors.inputBackground,
-                  child: SvCacheImage(
-                    imageUrl: drama.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      child: SvCacheImage(
+                        imageUrl: drama.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    if (showFavoriteBadge) Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Material(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          onTap: onFavoriteTap,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              size: 18,
+                              color: isFavorite ? Colors.redAccent : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -110,11 +147,11 @@ class HorizontalDramaCard extends StatelessWidget {
         height: 120,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadow,
+              color: Theme.of(context).shadowColor,
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -195,7 +232,7 @@ class HorizontalDramaCard extends StatelessWidget {
                         // 播放按钮
                         Icon(
                           Icons.play_circle_outline,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 24,
                         ),
                       ],

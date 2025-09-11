@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+
 import '../constants/app_text_styles.dart';
 import '../utils/localization.dart';
 
@@ -30,7 +30,7 @@ class CustomErrorWidget extends StatelessWidget {
             Icon(
               icon ?? Icons.error_outline,
               size: 64,
-              color: AppColors.textTertiary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             
             const SizedBox(height: 16),
@@ -39,7 +39,7 @@ class CustomErrorWidget extends StatelessWidget {
             Text(
               message ?? context.tr('unknown_error'),
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -50,8 +50,8 @@ class CustomErrorWidget extends StatelessWidget {
               ElevatedButton(
                 onPressed: onRetry,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textLight,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -62,7 +62,7 @@ class CustomErrorWidget extends StatelessWidget {
                 ),
                 child: Text(
                   retryText ?? context.tr('retry'),
-                  style: AppTextStyles.button,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
                 ),
               ),
             ],
@@ -117,7 +117,7 @@ class EmptyWidget extends StatelessWidget {
             Icon(
               icon ?? Icons.inbox_outlined,
               size: 64,
-              color: AppColors.textTertiary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             
             const SizedBox(height: 16),
@@ -126,7 +126,7 @@ class EmptyWidget extends StatelessWidget {
             Text(
               message ?? context.tr('no_data'),
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -166,8 +166,8 @@ class SearchEmptyWidget extends StatelessWidget {
               onPressed: onClearSearch,
               child: Text(
                 '清空搜索',
-                style: AppTextStyles.button.copyWith(
-                  color: AppColors.primary,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             )
@@ -188,14 +188,14 @@ class FavoritesEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyWidget(
-      message: '还没有收藏任何短剧\n快去发现喜欢的内容吧',
+      message: context.tr('favorites_empty_message'),
       icon: Icons.favorite_border,
       action: onBrowse != null
           ? ElevatedButton(
               onPressed: onBrowse,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -205,8 +205,8 @@ class FavoritesEmptyWidget extends StatelessWidget {
                 ),
               ),
               child: Text(
-                '去浏览',
-                style: AppTextStyles.button,
+                context.tr('browse'),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               ),
             )
           : null,
@@ -226,14 +226,14 @@ class HistoryEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyWidget(
-      message: '暂无观看历史\n开始观看短剧吧',
+      message: context.tr('history_empty_message'),
       icon: Icons.history,
       action: onBrowse != null
           ? ElevatedButton(
               onPressed: onBrowse,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -243,8 +243,8 @@ class HistoryEmptyWidget extends StatelessWidget {
                 ),
               ),
               child: Text(
-                '去浏览',
-                style: AppTextStyles.button,
+                context.tr('browse'),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary)
               ),
             )
           : null,

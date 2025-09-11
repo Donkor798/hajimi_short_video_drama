@@ -250,7 +250,7 @@ class NotFoundPage extends StatelessWidget {
           height: 50,
           child: OutlinedButton.icon(
             onPressed: () {
-              if (Navigator.of(context).canPop()) {
+              if (Navigator.canPop(context)) {
                 NavigatorUtils.goBack(context);
               } else {
                 NavigatorUtils.pushAndRemoveUntil(context, MainRouter.mainPage);

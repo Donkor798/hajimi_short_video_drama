@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+
 import '../constants/app_text_styles.dart';
+
+import '../router/fluro_navigator.dart';
 
 /// Common gradient AppBar with rounded bottom, matching Home style
 class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -22,23 +24,27 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final fg = theme.appBarTheme.foregroundColor ?? Colors.white;
+
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.transparent,
       leading: showBack
           ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textLight),
-              onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+              icon: Icon(Icons.arrow_back, color: fg),
+              onPressed: onBack ?? () => NavigatorUtils.goBack(context),
             )
           : null,
       flexibleSpace: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.primary, Color(0xFF5A8DEE)],
+            colors: [primary, primary.withOpacity(0.85)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(16),
             bottomRight: Radius.circular(16),
           ),
@@ -50,7 +56,7 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
           bottomRight: Radius.circular(16),
         ),
       ),
-      title: Text(titleText, style: AppTextStyles.h5.copyWith(color: AppColors.textLight)),
+      title: Text(titleText, style: theme.appBarTheme.titleTextStyle?.copyWith(color: fg) ?? AppTextStyles.h5.copyWith(color: fg)),
       actions: actions,
     );
   }

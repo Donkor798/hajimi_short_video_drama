@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hajimi_short_video_drama/constants/app_colors.dart';
 import 'package:provider/provider.dart';
-import '../../../constants/app_colors.dart';
+
 import '../../../constants/app_text_styles.dart';
 import '../../../models/drama.dart';
 import '../../../utils/localization.dart';
 import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
 import '../../../viewmodels/drama_detail_view_model.dart';
+import '../../../viewmodels/favorites_sync.dart';
 import '../../../widgets/sv_cache_image.dart';
 import '../../../widgets/loading_widget.dart';
 import '../../../widgets/error_widget.dart' as custom_widgets;
@@ -29,13 +31,11 @@ class DramaDetailPage extends StatefulWidget {
 class _DramaDetailPageState extends State<DramaDetailPage>
     with SingleTickerProviderStateMixin {
   late DramaDetailViewModel _viewModel;
-  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _viewModel = context.read<DramaDetailViewModel>();
-    _tabController = TabController(length: 1, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel.init(widget.drama);
@@ -44,7 +44,6 @@ class _DramaDetailPageState extends State<DramaDetailPage>
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -79,7 +78,7 @@ class _DramaDetailPageState extends State<DramaDetailPage>
                 _buildTabBar(),
 
                 // 标签页内容
-                _buildTabContent(viewModel),
+                _buildEpisodesSliver(viewModel),
               ],
             ],
           );
@@ -95,21 +94,29 @@ class _DramaDetailPageState extends State<DramaDetailPage>
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: AppColors.primary,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textLight),
+        icon: Icon(Icons.arrow_back, color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
         onPressed: () => NavigatorUtils.goBack(context),
       ),
       actions: [
         IconButton(
           icon: Icon(
             viewModel.isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: viewModel.isFavorite ? Colors.red : AppColors.textLight,
+            color: viewModel.isFavorite ? Colors.red : (Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
           ),
-          onPressed: () => viewModel.toggleFavorite(),
+          onPressed: () async {
+            await viewModel.toggleFavorite();
+            if (!mounted) return;
+            final dramaId = (viewModel.drama ?? widget.drama).id;
+            context.read<FavoritesSync>().notifyChanged(
+              dramaId: dramaId,
+              isFavorite: viewModel.isFavorite,
+            );
+          },
         ),
         IconButton(
-          icon: const Icon(Icons.share, color: AppColors.textLight),
+          icon: Icon(Icons.share, color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
           onPressed: () => _shareDrama(drama),
         ),
       ],
@@ -146,12 +153,12 @@ class _DramaDetailPageState extends State<DramaDetailPage>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.9),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.play_arrow,
-                    color: AppColors.textLight,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     size: 40,
                   ),
                 ),
@@ -242,8 +249,8 @@ class _DramaDetailPageState extends State<DramaDetailPage>
               const SizedBox(height: 8),
               Text(
                 (viewModel.parseDescription ?? drama.description)!,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -264,8 +271,8 @@ class _DramaDetailPageState extends State<DramaDetailPage>
             width: 60,
             child: Text(
               label,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textSecondary,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -281,32 +288,100 @@ class _DramaDetailPageState extends State<DramaDetailPage>
     );
   }
 
-  /// 构建标签栏
+  /// 构建“选集”标题栏（替代 TabBar，避免嵌套滚动冲突）
   Widget _buildTabBar() {
     return SliverToBoxAdapter(
       child: Container(
-        color: AppColors.surface,
-        child: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          tabs: [
-            Tab(text: context.tr('episode_select')),
-          ],
+        color: Theme.of(context).colorScheme.surface,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Text(
+          context.tr('episode_select'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ),
     );
   }
 
-  /// 构建标签页内容
-  Widget _buildTabContent(DramaDetailViewModel viewModel) {
-    return SliverFillRemaining(
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildEpisodeList(viewModel),
-        ],
+  /// 构建“选集”内容为 Sliver，避免内外两层可滚导致的滑动冲突
+  Widget _buildEpisodesSliver(DramaDetailViewModel viewModel) {
+    if (viewModel.isLoadingEpisodes) {
+      return const SliverToBoxAdapter(child: LoadingWidget());
+    }
+    if (viewModel.episodes.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(child: Text(context.tr('no_episode_info'))),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          childAspectRatio: 2.5,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final episode = viewModel.episodes[index];
+            final isSelected = episode.episodeNumber == viewModel.selectedEpisode;
+            final isWatched = viewModel.isEpisodeWatched(episode.episodeNumber);
+
+            return GestureDetector(
+              onTap: () => _playEpisode(viewModel, episode.episodeNumber),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Text(
+                        context.tr('episode', params: {'number': episode.episodeNumber.toString()}),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                    ),
+                    if (isWatched)
+                      const Positioned(
+                        top: 2,
+                        right: 2,
+                        child: SizedBox(
+                          width: 8,
+                          height: 8,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+          childCount: viewModel.episodes.length,
+        ),
       ),
     );
   }
@@ -342,10 +417,10 @@ class _DramaDetailPageState extends State<DramaDetailPage>
           onTap: () => _playEpisode(viewModel, episode.episodeNumber),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.surface,
+              color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
               ),
             ),
             child: Stack(
@@ -353,8 +428,8 @@ class _DramaDetailPageState extends State<DramaDetailPage>
                 Center(
                   child: Text(
                     context.tr('episode', params: {'number': episode.episodeNumber.toString()}),
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: isSelected ? AppColors.textLight : AppColors.textPrimary,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),

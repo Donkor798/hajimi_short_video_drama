@@ -43,6 +43,9 @@
 
   "add_to_favorites": "Add to Favorites",
   "remove_from_favorites": "Remove from Favorites",
+  "confirm_remove_favorite": "Remove from favorites?",
+  "removed": "Removed",
+
   "share": "Share",
   "download": "Download",
 
@@ -60,9 +63,7 @@
 
   "language": "Language",
   "theme": "Theme",
-  "light_theme": "Light Theme",
-  "dark_theme": "Dark Theme",
-  "system_theme": "System Theme",
+
 
   "about": "About",
   "version": "Version",
@@ -83,14 +84,76 @@
   "minute": "minute",
   "hour": "hour",
   "day": "day",
+  "browse": "Browse",
+  "favorites_empty_message": "You have no favorites yet\nGo discover what you like",
+  "history_empty_message": "No watch history yet\nStart watching dramas",
+
   "week": "week",
   "month": "month",
   "year": "year",
+
+  "local_user": "Local User",
+  "play_history": "Watch History",
+  "common_entries": "Shortcuts",
+  "actions": "Actions",
+  "cleared": "Cleared",
 
   "today": "Today",
   "yesterday": "Yesterday",
   "this_week": "This Week",
   "this_month": "This Month",
+  "other_functions": "Other Functions",
+  "change_avatar": "Change avatar",
+  "random_nickname": "Random nickname",
+  "copy_id": "Copy ID",
+  "copied": "Copied",
+  "avatar_updated": "Avatar updated",
+  "nickname_updated": "Nickname updated",
+
+  "feature_wip": "Feature in development",
+  "edit_profile": "Edit Profile",
+  "logout": "Logout",
+  "logout_confirm_title": "Logout",
+  "logout_confirm_message": "Are you sure you want to logout?",
+  "logout_success": "Logged out successfully",
+  "total_views": "Total Views",
+  "quick_actions": "Quick Actions",
+  "refresh_avatar": "New Avatar",
+  "my_favorites": "My Favorites",
+  "manage_favorites": "Manage favorite content",
+  "download_manager": "Downloads",
+  "offline_videos": "Offline video management",
+  "app_preferences": "App preferences",
+  "help_improve": "Help us improve",
+  "app_info": "App info & version",
+  "logout_account": "Logout current account",
+  "view_watch_history": "View watch history",
+
+  "display_settings": "Display Settings",
+  "storage_settings": "Storage Settings",
+  "other_settings": "Other Settings",
+  "select_language": "Select Language",
+  "select_theme_color": "Select Theme Color",
+  "choose_theme_color": "Choose theme color",
+  "theme_color": "Theme Color",
+  "language": "Language",
+
+  "current_cache_size": "Current cache size",
+  "cache_info": "Cache Info",
+  "cache_description": "Cache includes images, video previews and other temporary files",
+  "clear_app_cache": "Clear app cache",
+  "clear_cache_confirm": "Are you sure you want to clear all cache? This will delete all temporary files.",
+  "cache_cleared": "Cache cleared",
+  "restore_default_settings": "Restore default settings",
+  "reset_settings_confirm": "Are you sure you want to reset all settings? This will restore to default configuration.",
+  "settings_reset": "Settings reset",
+  "cache_size": "Cache Size",
+  "clear_cache": "Clear Cache",
+
+
+  "reset_settings": "Reset Settings",
+
+
   "update_time": "Update Time",
   "related_recommendations": "Related",
   "no_episode_info": "No episode info",

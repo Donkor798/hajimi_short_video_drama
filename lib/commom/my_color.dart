@@ -65,14 +65,11 @@ class MyColor extends ChangeNotifier {
   MaterialColor get colorPrimary => color;
 }
 
-///自定义的主题色
+/// 自定义的主题色（仅保留：红色、浅蓝色、绿色）
+/// 索引约定：0=红色（默认），1=浅蓝色，2=绿色
 List<MaterialColor> colors = [
   Colors.red,
-  primaryBlack,
-  Colors.purple,
-  Colors.cyan,
-  Colors.blue,
-  Colors.amber,
+  Colors.lightBlue,
   Colors.green,
 ];
 

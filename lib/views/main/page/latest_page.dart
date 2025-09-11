@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_refresh/easy_refresh.dart';
+
 import '../../../constants/app_colors.dart';
 import '../../../utils/localization.dart';
 import '../../../router/fluro_navigator.dart';

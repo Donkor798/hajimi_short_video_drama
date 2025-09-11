@@ -48,7 +48,6 @@ dependencies:
 
   # 视频播放
   video_player: ^2.8.6
-  chewie: 1.7.5
 
   # 路由管理
   fluro: ^2.0.5
@@ -97,6 +96,9 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lang/
+    # 本地测试视频资源（播放页临时使用）
+    - assets/video/
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

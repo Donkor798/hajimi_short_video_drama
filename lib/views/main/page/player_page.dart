@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../viewmodels/player_view_model.dart';
+
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
+
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
 import '../../../models/drama.dart';
 
 import '../../../utils/localization.dart';
+
 import '../../../router/fluro_navigator.dart';
 
-import '../main_router.dart';
 
 /// 视频播放器页面
 /// Author: Donkor
@@ -30,296 +34,200 @@ class PlayerPage extends StatefulWidget {
   State<PlayerPage> createState() => _PlayerPageState();
 }
 
-class _PlayerPageState extends State<PlayerPage> {
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
-  bool _isLoading = true;
-  bool _hasError = false;
-  String? _errorMessage;
+class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateMixin {
+  // 沉浸式系统栏仅在本页生效，业务状态交由 PlayerViewModel 管理（Provider）
+  // UI 过渡动效（切集时淡入淡出遮罩）
+  late final AnimationController _flashCtl;
+  late final Animation<double> _flashOpacity;
+
 
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
+    // 沉浸式系统栏，仅本页生效
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 切集过渡淡入淡出动画
+    _flashCtl = AnimationController(vsync: this, duration: const Duration(milliseconds: 160));
+    _flashOpacity = Tween<double>(begin: 0, end: 0.15).animate(_flashCtl);
   }
 
   @override
   void dispose() {
-    _disposePlayer();
+    _flashCtl.dispose();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
-  /// 初始化播放器
-  Future<void> _initializePlayer() async {
+  void _playChangeFlash() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _hasError = false;
-        _errorMessage = null;
-      });
-
-      // 使用示例视频URL，实际项目中应该从API获取
-      final videoUrl = widget.videoUrl ??
-          'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4';
-
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(videoUrl),
-      );
-
-      await _videoPlayerController!.initialize();
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
-        autoPlay: true,
-        looping: false,
-        allowFullScreen: true,
-        allowMuting: true,
-        showControls: true,
-
-        materialProgressColors: ChewieProgressColors(
-          playedColor: AppColors.primary,
-          handleColor: AppColors.primary,
-          backgroundColor: AppColors.textTertiary,
-          bufferedColor: AppColors.textSecondary,
-        ),
-        placeholder: Container(
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-        errorBuilder: (context, errorMessage) {
-          return Container(
-            color: Colors.black,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.tr('load_failed'),
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    errorMessage,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white70,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = e.toString();
-      });
-    }
+      await _flashCtl.forward(from: 0);
+      await _flashCtl.reverse();
+    } catch (_) {}
   }
 
-  /// 释放播放器资源
-  void _disposePlayer() {
-    _chewieController?.dispose();
-    _videoPlayerController?.dispose();
-  }
+
+
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-    );
-  }
+    return ChangeNotifierProvider<PlayerViewModel>(
+      create: (_) => PlayerViewModel(
+        drama: widget.drama,
+        initialEpisodeNumber: widget.episodeNumber,
+      )..init(),
+      child: Consumer<PlayerViewModel>(
+        builder: (context, vm, _) {
+          if (vm.hasError) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 64),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.tr('load_failed'),
+                      style: AppTextStyles.h6.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      vm.errorMessage ?? context.tr('unknown_error'),
+                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => vm.onPageChanged(vm.currentIndex),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(context.tr('retry')),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
-  /// 构建应用栏
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.black,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => NavigatorUtils.goBack(context),
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: Builder(
+              builder: (context) {
+                final padding = MediaQuery.of(context).padding;
+                return GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => context.read<PlayerViewModel>().toggleOverlayVisible(),
+                  child: Stack(
+                    children: [
+                    // 1) 主体：抖音式纵向 PageView
+                    PageView.builder(
+                      controller: vm.pageController,
+                      scrollDirection: Axis.vertical,
+                      itemCount: vm.itemCount,
+                      onPageChanged: (index) {
+                        vm.onPageChanged(index);
+                        HapticFeedback.lightImpact(); // 轻微震动反馈
+                        _playChangeFlash(); // 过渡淡入淡出
+                      },
+                      itemBuilder: (context, index) {
+                        final ctrl = vm.controllers[index];
+                        return Container(
+                          color: Colors.black,
+                          alignment: Alignment.center,
+                          child: (ctrl != null && ctrl.value.isInitialized)
+                              ? FittedBox(
+                                  fit: BoxFit.cover,
+                                  child: SizedBox(
+                                    width: ctrl.value.size.width,
+                                    height: ctrl.value.size.height,
+                                    child: VideoPlayer(ctrl),
+                                  ),
+                                )
+                              : const CircularProgressIndicator(color: AppColors.primary),
+                        );
+                      },
+                    ),
+
+                    // 2) 顶部信息条（返回 + 剧名 + 当前集），带渐变，适配沉浸式安全区，可显隐
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: padding.top,
+                      child: IgnorePointer(
+                        ignoring: !vm.overlayVisible,
+                        child: AnimatedOpacity(
+                          opacity: vm.overlayVisible ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 160),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 16, 24),
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.black54, Colors.transparent],
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                                  onPressed: () => NavigatorUtils.goBack(context),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        widget.drama.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        context.tr('episode', params: {'number': (vm.currentIndex + 1).toString()}),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.labelSmall.copyWith(color: Colors.white70),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+
+
+                    // 4) 切集过渡淡入淡出遮罩
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _flashCtl,
+                          builder: (_, __) => Container(
+                            color: Colors.black.withOpacity(_flashOpacity.value),
+                          ),
+                        ),
+                      ),
+                    ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ); // Scaffold
+        },
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.drama.name,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            context.tr('episode', params: {'number': widget.episodeNumber.toString()}),
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Colors.white70,
-            ),
-          ),
-        ],
-      ),
-
     );
   }
-
-  /// 构建主体内容
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
-      );
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.white,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.tr('load_failed'),
-              style: AppTextStyles.h6.copyWith(
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage ?? context.tr('unknown_error'),
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.white70,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => _initializePlayer(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(context.tr('retry')),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // 视频播放器
-        Expanded(
-          child: _chewieController != null
-              ? Chewie(controller: _chewieController!)
-              : const SizedBox(),
-        ),
-        _buildEpisodeNavBar(),
-
-        // 控制栏（非全屏时显示）
-
-      ],
-    );
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /// 剧集切换按钮栏
-  Widget _buildEpisodeNavBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_hasPreviousEpisode())
-            ElevatedButton.icon(
-              onPressed: _playPreviousEpisode,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.skip_previous),
-              label: Text(context.tr('previous_episode')),
-            ),
-          const SizedBox(width: 12),
-          if (_hasNextEpisode())
-            ElevatedButton.icon(
-              onPressed: _playNextEpisode,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.skip_next),
-              label: Text(context.tr('next_episode')),
-            ),
-        ],
-      ),
-    );
-  }
-
-  bool _hasPreviousEpisode() => widget.episodeNumber > 1;
-
-  bool _hasNextEpisode() {
-    final total = widget.drama.totalEpisodes;
-    if (total == null) return true;
-    return widget.episodeNumber < total;
-  }
-
-  void _playPreviousEpisode() {
-    if (!_hasPreviousEpisode()) return;
-    NavigatorUtils.push(
-      context,
-      '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber - 1}',
-      replace: true,
-      arguments: {'drama': widget.drama},
-    );
-  }
-
-  void _playNextEpisode() {
-    if (!_hasNextEpisode()) return;
-    NavigatorUtils.push(
-      context,
-      '${MainRouter.playerPage}/${widget.drama.id}/${widget.episodeNumber + 1}',
-      replace: true,
-      arguments: {'drama': widget.drama},
-    );
-  }
-
-
-
 }
+

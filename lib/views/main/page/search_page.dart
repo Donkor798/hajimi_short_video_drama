@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../constants/app_colors.dart';
+
 import '../../../constants/app_text_styles.dart';
 import '../../../utils/localization.dart';
 import '../../../router/fluro_navigator.dart';
@@ -56,7 +56,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: _buildAppBar(),
       body: Consumer<SearchViewModel>(
         builder: (context, viewModel, child) {
@@ -79,14 +79,14 @@ class _SearchPageState extends State<SearchPage> {
   /// 构建应用栏
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.primary,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       elevation: 0,
       title: Text(
         context.tr('search'),
-        style: AppTextStyles.h5.copyWith(color: AppColors.textLight),
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
       ),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textLight),
+        icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onPrimary),
         onPressed: () => NavigatorUtils.goBack(context),
       ),
     );
@@ -96,9 +96,9 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildSearchBar(SearchViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(16),
         ),
       ),
@@ -108,23 +108,23 @@ class _SearchPageState extends State<SearchPage> {
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
               decoration: InputDecoration(
                 hintText: context.tr('search_hint'),
-                hintStyle: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textTertiary,
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                 ),
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.clear,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                         onPressed: () {
                           _searchController.clear();
@@ -134,7 +134,7 @@ class _SearchPageState extends State<SearchPage> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -167,12 +167,12 @@ class _SearchPageState extends State<SearchPage> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.secondary,
+                color: Theme.of(context).colorScheme.secondary,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.search,
-                color: AppColors.textLight,
+                color: Theme.of(context).colorScheme.onSecondary,
                 size: 20,
               ),
             ),
@@ -222,7 +222,7 @@ class _SearchPageState extends State<SearchPage> {
           padding: const EdgeInsets.all(16),
           child: Text(
             '${context.tr('search_result')} (${viewModel.searchResults.length})',
-            style: AppTextStyles.h6,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         
@@ -277,8 +277,8 @@ class _SearchPageState extends State<SearchPage> {
                   onTap: () => _showClearHistoryDialog(viewModel),
                   child: Text(
                     context.tr('clear_search_history'),
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.primary,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -317,18 +317,18 @@ class _SearchPageState extends State<SearchPage> {
     return Column(
       children: viewModel.searchHistory.map((keyword) {
         return ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.history,
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           title: Text(
             keyword,
-            style: AppTextStyles.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           trailing: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.close,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 20,
             ),
             onPressed: () => viewModel.removeFromSearchHistory(keyword),
@@ -352,11 +352,11 @@ class _SearchPageState extends State<SearchPage> {
         content: const Text('确定要清空所有搜索历史吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => NavigatorUtils.goBackWithParams(ctx, false),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
+            onPressed: () => NavigatorUtils.goBackWithParams(ctx, true),
             child: const Text('确定'),
           ),
         ],

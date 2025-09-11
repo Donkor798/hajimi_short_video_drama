@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../constants/app_colors.dart';
+
+import '../router/fluro_navigator.dart';
+import '../views/main/main_router.dart';
+
 
 /// 图片缓存组件 - 统一处理网络图片的加载、缓存和错误处理
 class SvCacheImage extends StatelessWidget {
   /// 图片URL
   final String imageUrl;
-  
+
   /// 宽度
   final double? width;
-  
+
   /// 高度
   final double? height;
-  
+
   /// 适配方式
   final BoxFit fit;
-  
+
   /// 占位符
   final Widget? placeholder;
-  
+
   /// 错误时显示的组件
   final Widget? errorWidget;
-  
+
   /// 边框圆角
   final BorderRadius? borderRadius;
-  
+
   /// 是否显示加载指示器
   final bool showLoadingIndicator;
-  
+
   /// 背景颜色
   final Color? backgroundColor;
-  
+
   /// 缓存时间（天）
   final int? cacheMaxAge;
 
@@ -116,27 +119,43 @@ class SvCacheImage extends StatelessWidget {
       return v.toInt();
     }
 
-    Widget imageWidget = CachedNetworkImage(
-      imageUrl: imageUrl,
-      width: width,
-      height: height,
-      fit: fit,
-      placeholder: placeholder != null
-          ? (context, url) => placeholder!
-          : showLoadingIndicator
-              ? (context, url) => _buildLoadingPlaceholder()
-              : null,
-      errorWidget: errorWidget != null
-          ? (context, url, error) => errorWidget!
-          : (context, url, error) => _buildErrorWidget(),
-      fadeInDuration: const Duration(milliseconds: 300),
-      fadeOutDuration: const Duration(milliseconds: 300),
-      // 仅当宽高为有效数值时，才参与缓存尺寸约束，避免 double.infinity/NaN 转换失败
-      memCacheWidth: _safeDim(width),
-      memCacheHeight: _safeDim(height),
-      maxWidthDiskCache: _safeDim(width),
-      maxHeightDiskCache: _safeDim(height),
-    );
+    // 本地校验URL，避免传入空字符串/无host的URL引发 Invalid argument(s): No host specified in URI
+    bool _isValidNetworkUrl(String u) {
+      final s = u.trim();
+      if (s.isEmpty) return false;
+      final uri = Uri.tryParse(s);
+      if (uri == null) return false;
+      final scheme = uri.scheme.toLowerCase();
+      return (scheme == 'http' || scheme == 'https') && (uri.host.isNotEmpty);
+    }
+
+    Widget imageWidget;
+    if (!_isValidNetworkUrl(imageUrl)) {
+      // URL 无效：直接使用占位或错误占位，避免触发网络请求
+      imageWidget = placeholder ?? _buildErrorWidget(context);
+    } else {
+      imageWidget = CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        placeholder: placeholder != null
+            ? (context, url) => placeholder!
+            : showLoadingIndicator
+                ? (context, url) => _buildLoadingPlaceholder(context)
+                : null,
+        errorWidget: errorWidget != null
+            ? (context, url, error) => errorWidget!
+            : (context, url, error) => _buildErrorWidget(context),
+        fadeInDuration: const Duration(milliseconds: 300),
+        fadeOutDuration: const Duration(milliseconds: 300),
+        // 仅当宽高为有效数值时，才参与缓存尺寸约束，避免 double.infinity/NaN 转换失败
+        memCacheWidth: _safeDim(width),
+        memCacheHeight: _safeDim(height),
+        maxWidthDiskCache: _safeDim(width),
+        maxHeightDiskCache: _safeDim(height),
+      );
+    }
 
     // 添加背景颜色
     if (backgroundColor != null) {
@@ -160,45 +179,45 @@ class SvCacheImage extends StatelessWidget {
   }
 
   /// 构建加载占位符
-  Widget _buildLoadingPlaceholder() {
+  Widget _buildLoadingPlaceholder(BuildContext context) {
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.inputBackground,
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: borderRadius,
       ),
-      child: const Center(
+      child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2.0,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
         ),
       ),
     );
   }
 
   /// 构建错误占位符
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(BuildContext context) {
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.inputBackground,
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: borderRadius,
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.broken_image_outlined,
-            color: AppColors.textTertiary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 32,
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             '加载失败',
             style: TextStyle(
-              color: AppColors.textTertiary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 12,
             ),
           ),
@@ -253,21 +272,13 @@ class ImagePreview extends StatelessWidget {
     required String imageUrl,
     String? heroTag,
   }) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return ImagePreview(
-            imageUrl: imageUrl,
-            heroTag: heroTag,
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
+    NavigatorUtils.push(
+      context,
+      MainRouter.imagePreviewPage,
+      arguments: {
+        'imageUrl': imageUrl,
+        'heroTag': heroTag,
+      },
     );
   }
 }

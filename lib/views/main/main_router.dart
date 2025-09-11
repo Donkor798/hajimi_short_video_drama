@@ -1,5 +1,4 @@
 import 'package:fluro/fluro.dart';
-import 'package:flutter/material.dart';
 
 import '../../router/i_router.dart';
 import 'fragment/home_fragment.dart';
@@ -7,9 +6,14 @@ import 'page/search_page.dart';
 import 'page/hot_page.dart';
 import 'page/latest_page.dart';
 import 'page/recommend_page.dart';
+import 'fragment/favorites_fragment.dart';
 import 'page/drama_detail_page.dart';
 import '../../models/drama.dart';
 import 'page/player_page.dart';
+import 'page/settings_page.dart';
+import 'page/about_page.dart';
+import '../../widgets/sv_cache_image.dart';
+
 
 /// 主模块路由
 /// author : Donkor , 创建日期: 2025-09-10
@@ -21,8 +25,13 @@ class MainRouter implements IRouterProvider{
   static String hotPage = '/hot';
   static String latestPage = '/latest';
   static String recommendPage = '/recommend';
+  static String favoritesPage = '/favorites';
   static String detailPage = '/detail'; // 使用 /detail/:id 形式
+  static String imagePreviewPage = '/image_preview';
+
   static String playerPage = '/player'; // 使用 /player/:dramaId/:episode 形式
+  static String settingsPage = '/settings';
+  static String aboutPage = '/about';
 
   @override
   void initRouter(FluroRouter router) {
@@ -35,10 +44,26 @@ class MainRouter implements IRouterProvider{
       return SearchPage(initialKeyword: keyword);
     }));
 
-    // 列表页
+    // 列表/功能页
     router.define(hotPage, handler: Handler(handlerFunc: (_, __) => const HotPage()));
+
+    // 图片预览页（通过 arguments 传入 {imageUrl, heroTag}）
+    router.define(imagePreviewPage, handler: Handler(handlerFunc: (context, params) {
+      final arg = context?.settings?.arguments;
+      String imageUrl = '';
+      String? heroTag;
+      if (arg is Map) {
+        imageUrl = (arg['imageUrl'] as String?) ?? '';
+        heroTag = arg['heroTag'] as String?;
+      }
+      return ImagePreview(imageUrl: imageUrl, heroTag: heroTag);
+    }));
+
     router.define(latestPage, handler: Handler(handlerFunc: (_, __) => const LatestPage()));
     router.define(recommendPage, handler: Handler(handlerFunc: (_, __) => const RecommendPage()));
+    router.define(favoritesPage, handler: Handler(handlerFunc: (_, __) => const FavoritesFragment()));
+    router.define(settingsPage, handler: Handler(handlerFunc: (_, __) => const SettingsPage()));
+    router.define(aboutPage, handler: Handler(handlerFunc: (_, __) => const AboutPage()));
 
     // 详情页：优先使用 arguments 传入的 Drama，其次使用 path 参数 id
     router.define('$detailPage/:id', handler: Handler(handlerFunc: (context, params) {

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
+import '../utils/log_util.dart';
 import '../constants/app_constants.dart';
 
 /// HTTP服务类 - 封装网络请求
@@ -10,7 +10,6 @@ class HttpService {
   HttpService._internal();
 
   late Dio _dio;
-  final Logger _logger = Logger();
 
   /// 初始化HTTP服务
   void init() {
@@ -28,7 +27,7 @@ class HttpService {
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
-      logPrint: (obj) => _logger.d(obj),
+      logPrint: (obj) => LogD(obj.toString()),
     ));
 
     // 添加错误拦截器
@@ -40,10 +39,11 @@ class HttpService {
     ));
   }
 
+
   /// 处理错误
   void _handleError(DioException error) {
     String errorMessage;
-    
+
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -66,8 +66,9 @@ class HttpService {
       default:
         errorMessage = '网络请求失败';
     }
-    
-    _logger.e('HTTP Error: $errorMessage', error: error);
+
+    // 使用 log_util 进行错误打印
+    LogE('HTTP Error: $errorMessage; detail: ${error.message}');
   }
 
   /// GET请求
