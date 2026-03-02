@@ -49,15 +49,18 @@ class FavoritesFragment extends StatelessWidget {
             }
 
             return EasyRefresh(
-              header: const ClassicHeader(),
-              footer: const ClassicFooter(),
+              header: const ClassicHeader(showText: false),
+              footer: const ClassicFooter(showText: false),
               onRefresh: () async => vm.refresh(),
               // 始终提供 onLoad，由 VM 内部控制 hasMore 与节流
-              onLoad: () async { await vm.loadMore(); },
+              onLoad: () async {
+                await vm.loadMore();
+              },
               child: _buildGrid(
                 context,
                 vm.items,
-                onBrowse: () => NavigatorUtils.push(context, MainRouter.recommendPage),
+                onBrowse: () =>
+                    NavigatorUtils.push(context, MainRouter.recommendPage),
                 onFavoriteTap: (d) => _confirmRemove(context, vm, d),
               ),
             );
@@ -93,7 +96,9 @@ class FavoritesFragment extends StatelessWidget {
         final drama = items[index];
         return DramaCard(
           drama: drama,
-          onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
+          onTap: () => NavigatorUtils.push(
+              context, '${MainRouter.detailPage}/${drama.id}',
+              arguments: drama),
           showFavoriteBadge: true,
           isFavorite: true,
           onFavoriteTap: () => onFavoriteTap(drama),
@@ -104,7 +109,8 @@ class FavoritesFragment extends StatelessWidget {
 
   /// 确认移除收藏
   /// author : Donkor , 创建日期: 2025-09-11
-  Future<void> _confirmRemove(BuildContext context, FavoritesViewModel vm, Drama drama) async {
+  Future<void> _confirmRemove(
+      BuildContext context, FavoritesViewModel vm, Drama drama) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) {

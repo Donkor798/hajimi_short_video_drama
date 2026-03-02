@@ -42,7 +42,7 @@ android {
         applicationId = "com.donkor.hajimi.shortvideodrama.hajimi_short_video_drama"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk 23 // flutter.minSdkVersion
+        minSdkVersion flutter.minSdkVersion // flutter.minSdkVersion
         targetSdk 35 // flutter.targetSdkVersion - 更新以支持 Android 15
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

@@ -40,19 +40,6 @@
 - 🔄 provider（状态管理）
 - 🛣️ fluro（路由管理）
 
-## 🚀 快速开始
-
-```bash
-# 📦 安装依赖
-flutter pub get
-
-# 🏃‍♂️ 运行应用
-flutter run
-
-# 📱 构建 APK
-flutter build apk --debug
-```
-
 ## 📁 项目结构
 
 ```
@@ -73,6 +60,10 @@ lib/
 - 📊 版本：1（仅初始化，无迁移）
 - 📋 表：settings、search_history、user_favorites、play_history
 - 🔄 升级策略：schema 变更时提示用户重装应用
+
+## 🚀 特别说明
+
+当接口负载过高的时候，接口返回会失败。视频源同理，播放不出来，可能是因为接口没请求成功
 
 ## 🙏 特别感谢
 

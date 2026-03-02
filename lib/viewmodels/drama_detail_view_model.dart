@@ -68,23 +68,12 @@ class DramaDetailViewModel extends BaseViewModel {
       if (response.success && response.data != null) {
         final meta = response.data!; _parseCover = meta.cover; _parseVideoName = meta.videoName; _parseTotalEpisodes = meta.totalEpisodes;
         _parseDescription = meta.description;
+        // 仅保留有播放地址的剧集
         _episodes = meta.episodes
             .map((e) => e.dramaId == 0 ? e.copyWith(dramaId: _drama!.id) : e)
+            .where((e) => (e.playUrl ?? '').isNotEmpty)
             .toList()
           ..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
-
-        // 如果没有剧集数据，创建默认剧集
-        final total = _drama!.totalEpisodes ?? meta.totalEpisodes ?? 0;
-        if (_episodes.isEmpty && total > 0) {
-          _episodes = List.generate(
-            total,
-            (index) => Episode(
-              dramaId: _drama!.id,
-              episodeNumber: index + 1,
-              title: '第${index + 1}集',
-            ),
-          );
-        }
       } else {
         setError(response.message ?? '加载剧集失败');
       }

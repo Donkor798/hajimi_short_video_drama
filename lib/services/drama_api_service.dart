@@ -57,18 +57,10 @@ class DramaApiService {
 
       if (response.success && response.data != null) {
         final raw = response.data;
-        List<dynamic> dramasData = const [];
-        if (raw is List) {
-          dramasData = raw;
-        } else if (raw is Map<String, dynamic>) {
-          dramasData = (raw['list'] as List?) ??
-              (raw['data'] as List?) ??
-              (raw['items'] as List?) ??
-              (raw['records'] as List?) ??
-              (raw['rows'] as List?) ??
-              const [];
+        if (_isApiErrorPayload(raw)) {
+          return ApiResponse.error(_extractApiErrorMessage(raw, '获取推荐失败'));
         }
-        final dramas = dramasData
+        final dramas = _extractDramaList(raw)
             .map((json) => Drama.fromJson(json as Map<String, dynamic>))
             .toList();
         return ApiResponse.success(dramas);
@@ -168,28 +160,23 @@ class DramaApiService {
         },
       );
 
-      if (response.success && response.data != null) {
-        final raw = response.data;
-        List<dynamic> dramasData = const [];
-        if (raw is List) {
-          dramasData = raw;
-        } else if (raw is Map<String, dynamic>) {
-          dramasData = (raw['list'] as List?) ??
-              (raw['data'] as List?) ??
-              (raw['items'] as List?) ??
-              (raw['records'] as List?) ??
-              (raw['rows'] as List?) ??
-              const [];
-        }
-        final dramas = dramasData
-            .map((json) => Drama.fromJson(json as Map<String, dynamic>))
-            .toList();
-        return ApiResponse.success(dramas);
-      } else {
-        return ApiResponse.error(response.message ?? '获取最新失败');
+      if (!response.success || response.data == null) {
+        return _fallbackLatestByRecommend(size: size);
       }
+
+      final raw = response.data;
+      final dramas = _extractDramaList(raw)
+          .map((json) => Drama.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      // 文档存在 /vod/latest，但线上可能返回业务 404；此时降级到推荐。
+      if (_isApiErrorPayload(raw) || dramas.isEmpty) {
+        return _fallbackLatestByRecommend(size: size);
+      }
+
+      return ApiResponse.success(dramas);
     } catch (e) {
-      return ApiResponse.error('获取最新失败: $e');
+      return _fallbackLatestByRecommend(size: size);
     }
   }
 
@@ -208,7 +195,32 @@ class DramaApiService {
       );
 
       if (response.success && response.data != null) {
-        final episodeData = Episode.fromJson(response.data as Map<String, dynamic>);
+        final raw = response.data;
+        // 兼容多种返回结构：可能是 {data: {...}} / {result: {...}} / 直接就是对象
+        final map = _unwrapToEpisodeMap(raw) ??
+            (raw is Map<String, dynamic> ? raw : <String, dynamic>{});
+        if (_hasEpisodeUrl(map)) {
+          final episodeData = Episode.fromJson(map);
+          return ApiResponse.success(episodeData);
+        }
+        if (_isApiErrorPayload(raw)) {
+          return ApiResponse.error(_extractApiErrorMessage(raw, '获取播放地址失败'));
+        }
+        // single 不可用时，降级到 all 结果里找目标集。
+        final allResp = await getAllEpisodesAndMeta(dramaId: dramaId);
+        if (allResp.success && allResp.data != null) {
+          final episodes = allResp.data!.episodes;
+          if (episodes.isNotEmpty) {
+            final target = episodes.firstWhere(
+              (e) => e.episodeNumber == episode,
+              orElse: () => episodes.first,
+            );
+            if ((target.playUrl ?? '').isNotEmpty) {
+              return ApiResponse.success(target);
+            }
+          }
+        }
+        final episodeData = Episode.fromJson(map);
         return ApiResponse.success(episodeData);
       } else {
         return ApiResponse.error(response.message ?? '获取播放地址失败');
@@ -216,6 +228,81 @@ class DramaApiService {
     } catch (e) {
       return ApiResponse.error('获取播放地址失败: $e');
     }
+  }
+
+  Future<ApiResponse<List<Drama>>> _fallbackLatestByRecommend({
+    required int size,
+  }) async {
+    try {
+      final fallbackResp = await _httpService.get(
+        ApiEndpoints.recommend,
+        queryParameters: {'size': size.toString()},
+      );
+      if (!fallbackResp.success || fallbackResp.data == null) {
+        return ApiResponse.error(fallbackResp.message ?? '获取最新失败');
+      }
+      final raw = fallbackResp.data;
+      if (_isApiErrorPayload(raw)) {
+        return ApiResponse.error(_extractApiErrorMessage(raw, '获取最新失败'));
+      }
+      final dramas = _extractDramaList(raw)
+          .map((json) => Drama.fromJson(json as Map<String, dynamic>))
+          .toList();
+      return ApiResponse.success(dramas);
+    } catch (e) {
+      return ApiResponse.error('获取最新失败: $e');
+    }
+  }
+
+  List<dynamic> _extractDramaList(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is Map<String, dynamic>) {
+      final direct = (raw['list'] as List?) ??
+          (raw['data'] as List?) ??
+          (raw['items'] as List?) ??
+          (raw['records'] as List?) ??
+          (raw['rows'] as List?);
+      if (direct != null) return direct;
+
+      final data = raw['data'];
+      if (data is Map<String, dynamic>) {
+        return (data['list'] as List?) ??
+            (data['items'] as List?) ??
+            (data['rows'] as List?) ??
+            const [];
+      }
+    }
+    return const [];
+  }
+
+  bool _isApiErrorPayload(dynamic raw) {
+    if (raw is! Map<String, dynamic>) return false;
+    if (!raw.containsKey('code')) return false;
+    final code = raw['code'];
+    final codeNum = int.tryParse(code?.toString() ?? '');
+    if (codeNum == null) return false;
+    return codeNum != 0 && codeNum != 200;
+  }
+
+  String _extractApiErrorMessage(dynamic raw, String fallback) {
+    if (raw is Map<String, dynamic>) {
+      final msg = raw['msg']?.toString();
+      if (msg != null && msg.isNotEmpty) return msg;
+      final message = raw['message']?.toString();
+      if (message != null && message.isNotEmpty) return message;
+    }
+    return fallback;
+  }
+
+  bool _hasEpisodeUrl(Map<String, dynamic> m) {
+    const keys = ['play_url', 'playUrl', 'parsedUrl', 'url', 'link'];
+    for (final k in keys) {
+      final v = m[k];
+      if (v != null && v.toString().isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// 批量获取剧集地址
@@ -233,14 +320,14 @@ class DramaApiService {
       );
 
       if (response.success && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final episodesData = data['episodes'] as List<dynamic>? ?? [];
-
-        final episodes = episodesData
-            .map((json) => Episode.fromJson(json as Map<String, dynamic>))
+        final raw = response.data;
+        final episodesData = _unwrapToEpisodeList(raw);
+        final list = episodesData
+            .whereType<Map<String, dynamic>>()
+            .map((json) => Episode.fromJson(json))
             .toList();
 
-        return ApiResponse.success(episodes);
+        return ApiResponse.success(list);
       } else {
         return ApiResponse.error(response.message ?? '获取剧集地址失败');
       }
@@ -318,6 +405,69 @@ class DramaApiService {
     }
   }
 
+  // 解析辅助：将各种包裹结构解包为包含 parsedUrl 的剧集 Map
+  Map<String, dynamic>? _unwrapToEpisodeMap(dynamic raw) {
+    if (raw is Map<String, dynamic>) {
+      bool hasUrlKey(Map<String, dynamic> m) {
+        const keys = ['play_url', 'playUrl', 'parsedUrl', 'url', 'link'];
+        for (final k in keys) {
+          final v = m[k];
+          if (v != null && v.toString().isNotEmpty) return true;
+        }
+        return false;
+      }
+
+      if (hasUrlKey(raw)) return raw;
+      for (final k in ['data', 'result', 'episode', 'item', 'record']) {
+        final v = raw[k];
+        if (v is Map<String, dynamic>) {
+          final mm = _unwrapToEpisodeMap(v);
+          if (mm != null) return mm;
+        } else if (v is List &&
+            v.isNotEmpty &&
+            v.first is Map<String, dynamic>) {
+          final mm = _unwrapToEpisodeMap(v.first as Map<String, dynamic>);
+          if (mm != null) return mm;
+        }
+      }
+      for (final v in raw.values) {
+        if (v is Map<String, dynamic>) {
+          final mm = _unwrapToEpisodeMap(v);
+          if (mm != null) return mm;
+        }
+      }
+    } else if (raw is List && raw.isNotEmpty) {
+      final first = raw.first;
+      if (first is Map<String, dynamic>) {
+        return _unwrapToEpisodeMap(first);
+      }
+    }
+    return null;
+  }
+
+  // 解析辅助：将各种包裹结构解包为剧集列表
+  List<dynamic> _unwrapToEpisodeList(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is Map<String, dynamic>) {
+      for (final key in [
+        'episodes',
+        'results',
+        'list',
+        'data',
+        'items',
+        'records',
+        'rows',
+      ]) {
+        final v = raw[key];
+        if (v is List) return v;
+      }
+      final d = raw['data'];
+      if (d is Map<String, dynamic>) {
+        return _unwrapToEpisodeList(d);
+      }
+    }
+    return const [];
+  }
 }
 
 /// parseAll meta result model
@@ -376,7 +526,6 @@ class ParseAllResult {
     );
   }
 }
-
 
 /// 短剧列表响应模型
 class DramaListResponse {

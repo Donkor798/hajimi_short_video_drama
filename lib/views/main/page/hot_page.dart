@@ -42,15 +42,22 @@ class _HotPageState extends State<HotPage> {
               onBack: () => NavigatorUtils.goBack(context),
             ),
             body: EasyRefresh(
+              header: const ClassicHeader(showText: false),
+              footer: const ClassicFooter(showText: false),
               onRefresh: () async => vm.refresh(),
-              onLoad: vm.hasMore ? () async { await vm.loadMore(); } : null,
+              onLoad: vm.hasMore
+                  ? () async {
+                      await vm.loadMore();
+                    }
+                  : null,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: vm.isLoading && vm.items.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : GridView.builder(
                         shrinkWrap: true,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
@@ -61,7 +68,9 @@ class _HotPageState extends State<HotPage> {
                           final drama = vm.items[index];
                           return DramaCard(
                             drama: drama,
-                            onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
+                            onTap: () => NavigatorUtils.push(
+                                context, '${MainRouter.detailPage}/${drama.id}',
+                                arguments: drama),
                           );
                         },
                       ),
@@ -73,4 +82,3 @@ class _HotPageState extends State<HotPage> {
     );
   }
 }
-

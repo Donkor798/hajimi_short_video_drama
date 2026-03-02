@@ -1,6 +1,7 @@
 import '../models/category.dart';
 import '../models/drama.dart';
 import '../services/drama_api_service.dart';
+import '../utils/log_util.dart';
 import 'base_view_model.dart';
 
 /// 首页ViewModel
@@ -44,43 +45,82 @@ class HomeViewModel extends BaseViewModel {
   /// 是否正在加载最新
   bool _isLoadingLatest = false;
   bool get isLoadingLatest => _isLoadingLatest;
+
   /// 是否正在加载分类结果（首屏/切换分类）
   bool _isLoadingCategory = false;
   bool get isLoadingCategory => _isLoadingCategory;
+
   /// 是否正在上拉加载更多（分类列表）
   bool _isLoadingCategoryMore = false;
   bool get isLoadingCategoryMore => _isLoadingCategoryMore;
-
 
   /// 是否正在加载热门
   bool _isLoadingHot = false;
   bool get isLoadingHot => _isLoadingHot;
 
   /// 初始化数据
-  /// 进入首页即加载：分类/推荐/最新/热门，并默认选中第一个分类加载其数据
+  /// 进入首页即加载：分类/推荐/最新/热门
+  /// 如果有分类，则加载第一个分类的数据；如果没有分类，则不加载分类数据
   Future<void> init() async {
+    LogI('HomeViewModel: 开始初始化');
     await executeAsync(() async {
-      await Future.wait([
-        loadCategories(),
-        loadRecommendDramas(),
-        loadLatestDramas(),
-        loadHotDramas(),
-      ]);
-      // 默认选中第一个分类并加载
-      if (_selectedCategoryId == null && _categories.isNotEmpty) {
-        selectCategory(_categories.first.typeId);
+      try {
+        LogI('HomeViewModel: 先加载分类，确保短剧分类ID可用');
+        await loadCategories();
+
+        // 如果有分类，则默认选中第一个分类并加载其数据
+        // 如果没有分类，则不加载分类数据，直接显示推荐/最新/热门
+        if (_categories.isNotEmpty) {
+          final containsSelected = _selectedCategoryId != null &&
+              _categories.any((c) => c.typeId == _selectedCategoryId);
+          if (!containsSelected) {
+            _selectedCategoryId = _categories.first.typeId;
+          }
+          LogI('HomeViewModel: 加载分类短剧 - categoryId:$_selectedCategoryId');
+          await loadCategoryDramas(
+            categoryId: _selectedCategoryId!,
+            page: 1,
+            loadMore: false,
+          );
+          LogI('HomeViewModel: 初始化完成 - 分类短剧数:${_categoryDramas.length}');
+        } else {
+          LogI('HomeViewModel: 没有分类数据，跳过分类短剧加载');
+          _selectedCategoryId = null;
+          _categoryDramas = [];
+          notifyListeners();
+        }
+
+        LogI('HomeViewModel: 并行加载推荐/最新/热门');
+        await Future.wait([
+          loadRecommendDramas(categoryId: _selectedCategoryId),
+          loadLatestDramas(),
+          loadHotDramas(),
+        ]);
+        LogI(
+            'HomeViewModel: 列表加载完成 - 推荐数:${_recommendDramas.length}, 最新数:${_latestDramas.length}, 热门数:${_hotDramas.length}');
+      } catch (e) {
+        LogE('HomeViewModel: 初始化失败 - $e');
+        rethrow;
       }
     });
   }
 
   /// 加载分类列表
   Future<void> loadCategories() async {
-    final response = await _apiService.getCategories();
-    if (response.success && response.data != null) {
-      _categories = response.data!;
-      notifyListeners();
-    } else {
-      setError(response.message ?? '加载分类失败');
+    try {
+      LogI('HomeViewModel: 开始加载分类列表');
+      final response = await _apiService.getCategories();
+      if (response.success && response.data != null) {
+        _categories = response.data!;
+        LogI('HomeViewModel: 分类列表加载成功 - 数量:${_categories.length}');
+        notifyListeners();
+      } else {
+        LogE('HomeViewModel: 分类列表加载失败 - ${response.message}');
+        setError(response.message ?? '加载分类失败');
+      }
+    } catch (e) {
+      LogE('HomeViewModel: 分类列表加载异常 - $e');
+      setError('加载分类失败: $e');
     }
   }
 
@@ -134,8 +174,12 @@ class HomeViewModel extends BaseViewModel {
     _isLoadingHot = true;
     notifyListeners();
     try {
-      // 使用第一个分类作为热门分类
-      final categoryId = _categories.isNotEmpty ? _categories.first.typeId : 1;
+      // 仅使用短剧分类作为热门来源；无短剧分类时保持空列表
+      if (_categories.isEmpty) {
+        _hotDramas = [];
+        return;
+      }
+      final categoryId = _categories.first.typeId;
       final response = await _apiService.getCategoryDramas(
         categoryId: categoryId,
         page: 1,
@@ -159,6 +203,8 @@ class HomeViewModel extends BaseViewModel {
     int page = 1,
     bool loadMore = false,
   }) async {
+    LogI(
+        'HomeViewModel: 开始加载分类短剧 - categoryId:$categoryId, page:$page, loadMore:$loadMore');
     if (loadMore) {
       // 上拉加载更多：仅标记“加载更多”状态，避免首屏loading影响整体刷新
       _isLoadingCategoryMore = true;
@@ -172,22 +218,29 @@ class HomeViewModel extends BaseViewModel {
         categoryId: categoryId,
         page: page,
       );
+      LogI(
+          'HomeViewModel: 分类短剧API响应 - success:${response.success}, hasData:${response.data != null}');
       if (response.success && response.data != null) {
         final data = response.data!;
         _categoryPage = data.currentPage;
         _categoryTotalPages = data.totalPages;
+        LogI(
+            'HomeViewModel: 分类短剧数据 - dramas:${data.dramas.length}, currentPage:${data.currentPage}, totalPages:${data.totalPages}');
         if (loadMore) {
           _categoryDramas = [..._categoryDramas, ...data.dramas];
         } else {
           _categoryDramas = data.dramas;
         }
+        LogI('HomeViewModel: 分类短剧加载成功 - 当前总数:${_categoryDramas.length}');
       } else {
+        LogE('HomeViewModel: 分类短剧加载失败 - ${response.message}');
         if (!loadMore) {
           _categoryDramas = [];
         }
         setError(response.message ?? '加载分类数据失败');
       }
     } catch (e) {
+      LogE('HomeViewModel: 分类短剧加载异常 - $e');
       if (!loadMore) {
         _categoryDramas = [];
       }
@@ -209,7 +262,8 @@ class HomeViewModel extends BaseViewModel {
       return false; // 没有更多了
     }
     final next = _categoryPage + 1;
-    await loadCategoryDramas(categoryId: _selectedCategoryId!, page: next, loadMore: true);
+    await loadCategoryDramas(
+        categoryId: _selectedCategoryId!, page: next, loadMore: true);
     return _categoryPage < _categoryTotalPages;
   }
 
@@ -259,16 +313,20 @@ class HomeViewModel extends BaseViewModel {
   /// 是否有数据
   bool get hasData {
     return _categories.isNotEmpty ||
-           _recommendDramas.isNotEmpty ||
-           _latestDramas.isNotEmpty ||
-           _hotDramas.isNotEmpty;
+        _recommendDramas.isNotEmpty ||
+        _latestDramas.isNotEmpty ||
+        _hotDramas.isNotEmpty;
   }
 
   /// 是否还有更多分类数据可加载
-  bool get hasMoreCategory => _selectedCategoryId != null && _categoryPage < _categoryTotalPages;
+  bool get hasMoreCategory =>
+      _selectedCategoryId != null && _categoryPage < _categoryTotalPages;
 
   /// 是否正在加载任何数据
   bool get isLoadingAny {
-    return isLoading || _isLoadingRecommend || _isLoadingLatest || _isLoadingHot;
+    return isLoading ||
+        _isLoadingRecommend ||
+        _isLoadingLatest ||
+        _isLoadingHot;
   }
 }

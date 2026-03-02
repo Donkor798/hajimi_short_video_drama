@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 
-
-
 /// 全局主题管理器
 /// 页面说明：提供全局主题数据（已移除深色模式与字体大小设置）
 /// author : Donkor , 创建日期: 2025-09-11
 class MyTheme extends ChangeNotifier {
 
-
-
   MyTheme();
-
-
-
-
 
   /// 获取当前主题数据
   ThemeData getThemeData(MaterialColor primaryColor) {
@@ -67,7 +59,7 @@ class MyTheme extends ChangeNotifier {
       ),
 
       // 卡片主题
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: colorScheme.surface,
         elevation: 2,
         shape: RoundedRectangleBorder(

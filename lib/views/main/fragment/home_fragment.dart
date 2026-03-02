@@ -4,12 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 
 import '../../../utils/localization.dart';
+import '../../../utils/log_util.dart';
 import '../../../router/fluro_navigator.dart';
 import '../main_router.dart';
+import '../../../models/drama.dart';
 import '../../../viewmodels/home_view_model.dart';
 import '../../../widgets/drama_card.dart';
 import '../../../widgets/category_chip.dart';
-import '../../../widgets/section_header.dart';
 import '../../../widgets/loading_widget.dart';
 import '../../../widgets/error_widget.dart' as custom_widgets;
 import '../../../widgets/gradient_app_bar.dart';
@@ -34,8 +35,10 @@ class _HomeFragmentState extends State<HomeFragment>
   @override
   void initState() {
     super.initState();
+    LogI('HomeFragment: initState');
     _viewModel = context.read<HomeViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      LogI('HomeFragment: 开始调用 viewModel.init()');
       _viewModel.init();
     });
   }
@@ -51,11 +54,15 @@ class _HomeFragmentState extends State<HomeFragment>
       appBar: _buildAppBar(),
       body: Consumer<HomeViewModel>(
         builder: (context, viewModel, child) {
+          LogD('HomeFragment: build - isLoading:${viewModel.isLoading}, hasData:${viewModel.hasData}, hasError:${viewModel.hasError}');
+
           if (viewModel.isLoading && !viewModel.hasData) {
+            LogI('HomeFragment: 显示加载中');
             return const LoadingWidget();
           }
 
           if (viewModel.hasError && !viewModel.hasData) {
+            LogE('HomeFragment: 显示错误 - ${viewModel.errorMessage}');
             return custom_widgets.CustomErrorWidget(
               message: viewModel.errorMessage ?? context.tr('load_failed'),
               onRetry: () => viewModel.retry(),
@@ -64,10 +71,15 @@ class _HomeFragmentState extends State<HomeFragment>
 
           // 首页分类：支持下拉刷新 + 上拉加载更多（分类结果分页）
           return EasyRefresh(
-            footer: const ClassicFooter(), //
-            onRefresh: () async { await viewModel.refresh(); },
+            header: const ClassicHeader(showText: false),
+            footer: const ClassicFooter(showText: false), //
+            onRefresh: () async {
+              await viewModel.refresh();
+            },
             onLoad: viewModel.hasMoreCategory
-                ? () async { await viewModel.loadMoreCategory(); }
+                ? () async {
+                    await viewModel.loadMoreCategory();
+                  }
                 : null,
             child: _buildOnlyCategoryContent(viewModel),
           );
@@ -118,7 +130,6 @@ class _HomeFragmentState extends State<HomeFragment>
     NavigatorUtils.push(context, MainRouter.latestPage);
   }
 
-
   /// 仅展示分类的内容区域
   /// author : Donkor , 创建日期: 2025-09-10
   Widget _buildOnlyCategoryContent(HomeViewModel viewModel) {
@@ -127,21 +138,20 @@ class _HomeFragmentState extends State<HomeFragment>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 如果有分类，显示分类选择器
           if (viewModel.categories.isNotEmpty) ...[
-            // SectionHeader(
-            //   title: context.tr('all_categories'),
-            //   onMoreTap: () {},
-            // ),
             const SizedBox(height: 12),
             _buildCategorySection(viewModel),
             const SizedBox(height: 12),
             _buildCategoryResultsSection(viewModel),
+          ] else ...[
+            // 如果没有分类，显示推荐/最新/热门的混合内容
+            _buildNoCategoryContent(viewModel),
           ],
         ],
       ),
     );
   }
-
 
   /// 构建分类区域（禁止横向列表向上层冒泡，避免 EasyRefresh 误触发导致指示器溢出）
   Widget _buildCategorySection(HomeViewModel viewModel) {
@@ -172,6 +182,51 @@ class _HomeFragmentState extends State<HomeFragment>
     );
   }
 
+  /// 构建没有分类时的内容（显示推荐/最新/热门的混合列表）
+  /// author : Donkor , 创建日期: 2026-03-02
+  Widget _buildNoCategoryContent(HomeViewModel viewModel) {
+    // 合并所有数据：推荐 + 最新 + 热门
+    final allDramas = <Drama>[
+      ...viewModel.recommendDramas,
+      ...viewModel.latestDramas,
+      ...viewModel.hotDramas,
+    ];
+
+    // 去重（根据ID）
+    final uniqueDramas = <int, Drama>{};
+    for (var drama in allDramas) {
+      uniqueDramas[drama.id] = drama;
+    }
+    final items = uniqueDramas.values.toList();
+
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: Text(context.tr('no_data'))),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.65,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final drama = items[index];
+        return DramaCard(
+          drama: drama,
+          onTap: () => NavigatorUtils.push(
+              context, '${MainRouter.detailPage}/${drama.id}',
+              arguments: drama),
+        );
+      },
+    );
+  }
 
   /// 构建最新区域
   /// 构建分类结果区域（网格，不横向滑动，移除加载更多功能）
@@ -207,7 +262,9 @@ class _HomeFragmentState extends State<HomeFragment>
         final drama = items[index];
         return DramaCard(
           drama: drama,
-          onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
+          onTap: () => NavigatorUtils.push(
+              context, '${MainRouter.detailPage}/${drama.id}',
+              arguments: drama),
         );
       },
     );

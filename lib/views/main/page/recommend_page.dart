@@ -42,10 +42,12 @@ class _RecommendPageState extends State<RecommendPage> {
               onBack: () => NavigatorUtils.goBack(context),
             ),
             body: EasyRefresh(
-              header: const ClassicHeader(), // 下拉刷新的头部提示
-              footer: const ClassicFooter(), // 上拉加载的底部提示
+              header: const ClassicHeader(showText: false), // 下拉刷新的头部提示
+              footer: const ClassicFooter(showText: false), // 上拉加载的底部提示
               onRefresh: () async => vm.refresh(),
-              onLoad: () async { await vm.loadMore(); }, // 始终允许触发，VM 内部基于 hasMore 决定是否继续
+              onLoad: () async {
+                await vm.loadMore();
+              }, // 始终允许触发，VM 内部基于 hasMore 决定是否继续
               child: vm.isLoading && vm.items.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : (vm.items.isEmpty && vm.hasError)
@@ -53,7 +55,8 @@ class _RecommendPageState extends State<RecommendPage> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(vm.errorMessage ?? context.tr('load_failed')),
+                              Text(
+                                  vm.errorMessage ?? context.tr('load_failed')),
                               const SizedBox(height: 8),
                               ElevatedButton(
                                 onPressed: () => vm.refresh(),
@@ -64,8 +67,10 @@ class _RecommendPageState extends State<RecommendPage> {
                         )
                       : GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          physics: const BouncingScrollPhysics(), // 物理滚动：保留回弹效果，避免 AlwaysScrollable 影响上拉触发
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          physics:
+                              const BouncingScrollPhysics(), // 物理滚动：保留回弹效果，避免 AlwaysScrollable 影响上拉触发
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
@@ -77,7 +82,9 @@ class _RecommendPageState extends State<RecommendPage> {
                             return DramaCard(
                               drama: drama,
                               showUpdateTime: false,
-                              onTap: () => NavigatorUtils.push(context, '${MainRouter.detailPage}/${drama.id}', arguments: drama),
+                              onTap: () => NavigatorUtils.push(context,
+                                  '${MainRouter.detailPage}/${drama.id}',
+                                  arguments: drama),
                             );
                           },
                         ),
@@ -88,4 +95,3 @@ class _RecommendPageState extends State<RecommendPage> {
     );
   }
 }
-

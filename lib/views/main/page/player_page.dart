@@ -75,6 +75,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
       create: (_) => PlayerViewModel(
         drama: widget.drama,
         initialEpisodeNumber: widget.episodeNumber,
+        initialVideoUrl: widget.videoUrl,
       )..init(),
       child: Consumer<PlayerViewModel>(
         builder: (context, vm, _) {

@@ -462,8 +462,10 @@ class _DramaDetailPageState extends State<DramaDetailPage>
   }
 
   /// 播放短剧
+  // 仅播放有URL的剧集：默认播放第一个可播放的剧集
   void _playDrama(DramaDetailViewModel viewModel) {
-    _playEpisode(viewModel, 1);
+    final firstPlayable = viewModel.episodes.isNotEmpty ? viewModel.episodes.first.episodeNumber : 1;
+    _playEpisode(viewModel, firstPlayable);
   }
 
   /// 播放剧集
